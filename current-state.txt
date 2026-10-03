@@ -1,0 +1,1974 @@
+============================================================
+FILE: src/App.jsx
+============================================================
+import useLenis from "./hooks/useLenis";
+import useStore from "./store/useStore";
+import Preloader from "./components/sections/Preloader";
+import Navbar from "./components/ui/Navbar";
+import Hero from "./components/sections/Hero";
+import Intro from "./components/sections/Intro";
+import Specs from "./components/sections/Specs";
+import Heritage from "./components/sections/Heritage";
+import CTA from "./components/sections/CTA";
+
+function App() {
+  const isLoading = useStore((state) => state.isLoading);
+  useLenis(isLoading);
+
+  return (
+    <>
+      {isLoading && <Preloader />}
+      <Navbar />
+      <main>
+        <Hero />
+        <Intro />
+        <Engin
+        <Specs />
+        <Heritage />
+        <CTA />
+      </main>
+    </>
+  );
+}
+
+export default App;
+
+
+
+============================================================
+FILE: src/main.jsx
+============================================================
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+
+
+============================================================
+FILE: src/store/useStore.js
+============================================================
+import { create } from "zustand";
+
+const useStore = create((set) => ({
+  isLoading: true,
+  setIsLoading: (value) => set({ isLoading: value }),
+
+  loadProgress: 0,
+  setLoadProgress: (value) => set({ loadProgress: value }),
+
+  carColor: "#ff0000",
+  setCarColor: (color) => set({ carColor: color }),
+}));
+
+export default useStore;
+
+
+
+============================================================
+FILE: src/data/cars.js
+============================================================
+// One model, many paints. Edit colors, copy and specs here.
+// theme = [highlight, mid, shadow] stops of the background gradient.
+// paint = body color (null = the GLB's original paint, i.e. the yellow).
+// The spec numbers are PLACEHOLDERS: replace with real ones.
+export const CAR_MODEL = "/models/ferrari.glb";
+
+export const CARS = [
+  {
+    id: "yellow",
+    paint: null,
+    theme: ["#f7d64e", "#efca38", "#dcb022"],
+    tagline: "Sculpted for speed",
+    specs: [
+      { val: "V12", lines: ["6.5 L", "830 CV"] },
+      { val: "0 – 100", lines: ["2.9 SEC"] },
+    ],
+  },
+  {
+    id: "green",
+    paint: "#1b8a55",
+    theme: ["#7fc79a", "#4ea574", "#43DA46FF"],
+    tagline: "Born on the track",
+    specs: [
+      { val: "V12", lines: ["6.5 L", "800 CV"] },
+      { val: "0 – 100", lines: ["3.0 SEC"] },
+    ],
+  },
+  {
+    id: "red",
+    paint: "#d1121b",
+    theme: ["#ee6a5e", "#d23a30", "#a11f1b"],
+    tagline: "Power, refined",
+    specs: [
+      { val: "V8", lines: ["3.9 L", "720 CV"] },
+      { val: "0 – 100", lines: ["2.9 SEC"] },
+    ],
+  },
+  {
+    id: "silver",
+    paint: "#b9bcc2",
+    theme: ["#d9d6d0", "#bdb9b1", "#8f8b83"],
+    tagline: "Pure emotion",
+    specs: [
+      { val: "V12", lines: ["6.3 L", "780 CV"] },
+      { val: "0 – 100", lines: ["2.9 SEC"] },
+    ],
+  },
+];
+
+
+
+============================================================
+FILE: src/components/sections/Intro.jsx
+============================================================
+import { useRef } from "react";
+import useScrollProgress from "../../hooks/useScrollProgress";
+import "./story.css";
+
+const WORDS = [
+  "We",
+  "don't",
+  "build",
+  "cars.",
+  "We",
+  "build",
+  "the",
+  "feeling",
+  "before",
+  "you",
+  "arrive.",
+];
+const ACCENT = new Set(["feeling"]);
+
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+
+export default function Intro() {
+  const sec = useRef(null);
+  const curve = useRef(null);
+  const rail = useRef(null);
+  const words = useRef([]);
+
+  useScrollProgress(sec, (p, r) => {
+    // the curtain pulls taut as it rises to the top of the screen
+    if (curve.current) {
+      const t = clamp01(r.top / (window.innerHeight * 0.9));
+      curve.current.style.transform = `scaleY(${t.toFixed(3)})`;
+    }
+
+    // word-by-word reveal
+    const START = 0.08;
+    const END = 0.82;
+    const f = clamp01((p - START) / (END - START)) * WORDS.length;
+    words.current.forEach((el, i) => {
+      if (!el) return;
+      const o = clamp01(f - i);
+      el.style.opacity = (0.14 + 0.86 * o).toFixed(3);
+      el.style.transform = `translateY(${((1 - o) * 0.3).toFixed(3)}em)`;
+    });
+
+    if (rail.current) rail.current.style.transform = `scaleY(${p.toFixed(3)})`;
+  });
+
+  return (
+    <section className="story intro" id="intro" ref={sec} data-nav="light">
+      <div className="intro-curve" ref={curve} />
+
+      <div className="intro-stage">
+        <div className="intro-top">
+          <span className="story-label">( 01 ) — The Philosophy</span>
+          <span className="story-label">Scroll</span>
+        </div>
+
+        <p className="intro-text">
+          {WORDS.map((w, i) => (
+            <span
+              key={i}
+              className={`intro-word${ACCENT.has(w) ? " is-accent" : ""}`}
+              ref={(el) => (words.current[i] = el)}
+            >
+              {w}
+            </span>
+          ))}
+        </p>
+
+        <div className="intro-rail">
+          <i ref={rail} />
+        </div>
+
+        <div className="intro-bottom">
+          <span className="story-label">Maranello, Italia</span>
+          <span className="story-label">44°31′N — 10°51′E</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+
+
+============================================================
+FILE: src/components/sections/Hero.jsx
+============================================================
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import Scene from "../canvas/Scene";
+import CarModel from "../canvas/CarModel";
+import GroundPlane from "../canvas/GroundPlane";
+import HeroText from "../canvas/HeroText";
+import HeroOverlay from "../HeroOverlay";
+import HeroTelemetry from "../HeroTelemetry";
+import ErrorBoundary from "../ui/ErrorBoundary";
+import { CARS, CAR_MODEL } from "../../data/cars";
+import "../hero.css";
+
+function Hero() {
+  const [index, setIndex] = useState(0);
+  const [active, setActive] = useState(true);
+  const rootRef = useRef(null);
+
+  const select = useCallback(
+    (i) => setIndex((i + CARS.length) % CARS.length),
+    [],
+  );
+
+  // render the 3D scene only while the hero is (nearly) on screen
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setActive(entry.isIntersecting),
+      { rootMargin: "200px 0px 200px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    if (!active) return;
+    const onKey = (e) => {
+      if (e.key === "ArrowRight") select(index + 1);
+      if (e.key === "ArrowLeft") select(index - 1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [active, index, select]);
+
+  const car = CARS[index];
+  const theme = {
+    "--c1": car.theme[0],
+    "--c2": car.theme[1],
+    "--c3": car.theme[2],
+  };
+
+  return (
+    <div className="hero-root" id="top" ref={rootRef}>
+      <section className="hero-stage" style={theme}>
+        <div className="hero-canvas">
+          <ErrorBoundary>
+            <Suspense fallback={null}>
+              <Scene active={active}>
+                <CarModel url={CAR_MODEL} paint={car.paint} />
+                <GroundPlane position={[-0.171, 0.079, 1.775]} />
+                <HeroText position={[-8, 0.082, 2.6]} />
+              </Scene>
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+
+        <HeroOverlay
+          car={car}
+          index={index}
+          total={CARS.length}
+          pending={false}
+          onSelect={select}
+        />
+        <HeroTelemetry car={car} />
+      </section>
+    </div>
+  );
+}
+
+export default Hero;
+
+
+
+============================================================
+FILE: src/components/sections/Specs.jsx
+============================================================
+function Specs() {
+  return (
+    <section className="h-screen bg-black flex items-center justify-center">
+      <h2 className="text-white text-4xl">Specs</h2>
+    </section>
+  );
+}
+
+export default Specs;
+
+
+
+============================================================
+FILE: src/components/sections/Configurator.jsx
+============================================================
+function Configurator() {
+  return (
+    <section className="h-screen bg-neutral-900 flex items-center justify-center">
+      <h2 className="text-white text-4xl">Configurator</h2>
+    </section>
+  );
+}
+
+export default Configurator;
+
+
+
+============================================================
+FILE: src/components/sections/Heritage.jsx
+============================================================
+function Heritage() {
+  return (
+    <section className="h-screen bg-black flex items-center justify-center">
+      <h2 className="text-white text-4xl">Heritage</h2>
+    </section>
+  );
+}
+
+export default Heritage;
+
+
+
+============================================================
+FILE: src/components/sections/CTA.jsx
+============================================================
+function CTA() {
+  return (
+    <section className="h-screen bg-red-700 flex items-center justify-center">
+      <h2 className="text-white text-4xl">Book a Test Drive</h2>
+    </section>
+  );
+}
+
+export default CTA;
+
+
+
+============================================================
+FILE: src/components/sections/Preloader.jsx
+============================================================
+// components/sections/Preloader.jsx
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import useStore from "../../store/useStore";
+import usePreloaderGate from "../../hooks/usePreloaderGate";
+import FerrariLogo from "../ui/FerrariLogo";
+import { strokeUnits, pad3 } from "../../utils/logoDraw";
+
+const MIN_TIME = 2.2;
+
+function Preloader() {
+  const root = useRef(null);
+  const outro = useRef(null);
+  const markReady = useRef(() => {});
+  const setIsLoading = useStore((s) => s.setIsLoading);
+  const heroReady = useStore((s) => s.heroReady);
+  const introDone = usePreloaderGate(() => outro.current?.play());
+
+  useEffect(() => {
+    const ctx = gsap.context(() => {
+      const base = root.current.querySelector("[data-base]");
+      const lit = root.current.querySelector("[data-lit]");
+      const count = root.current.querySelector("[data-count]");
+
+      // dim outline layer
+      gsap.utils.toArray(".ferrari-main, .ferrari-detail", base).forEach((p) =>
+        gsap.set(p, {
+          fill: "rgba(255,255,255,0.04)",
+          stroke: "rgba(255,255,255,0.35)",
+          strokeWidth: strokeUnits(p, 1.2),
+        }),
+      );
+      gsap.set(gsap.utils.toArray(".ferrari-highlight", base), { opacity: 0 });
+
+      // solid red layer
+      gsap.set(gsap.utils.toArray(".ferrari-main", lit), {
+        fill: "#e10600",
+        stroke: "none",
+      });
+      gsap.utils
+        .toArray(".ferrari-detail", lit)
+        .forEach((p) =>
+          gsap.set(p, {
+            fill: "none",
+            stroke: "#ff6a5a",
+            strokeWidth: strokeUnits(p, 1.2),
+          }),
+        );
+      gsap.set(gsap.utils.toArray(".ferrari-highlight", lit), {
+        fill: "#fff",
+        opacity: 1,
+      });
+
+      const state = { v: 0 };
+      const render = () => {
+        count.textContent = pad3(state.v);
+        lit.style.clipPath = `inset(${100 - state.v}% 0% 0% 0%)`;
+      };
+      render();
+
+      outro.current = gsap
+        .timeline({ paused: true, onComplete: () => setIsLoading(false) })
+        .to(lit, {
+          filter: "drop-shadow(0 0 28px rgba(255,26,26,.85))",
+          duration: 0.35,
+        })
+        .to("[data-ui]", { opacity: 0, duration: 0.3 }, "+=0.15")
+        .to(
+          root.current,
+          {
+            clipPath: "inset(100% 0% 0% 0%)",
+            duration: 0.9,
+            ease: "expo.inOut",
+          },
+          "<0.1",
+        );
+
+      // 0 → 90 over the minimum time, then wait for the hero, then 90 → 100
+      let minDone = false;
+      let ready = false;
+      const finish = gsap
+        .timeline({ paused: true, onComplete: introDone })
+        .to(state, {
+          v: 100,
+          duration: 0.5,
+          ease: "power2.out",
+          onUpdate: render,
+        });
+      const tryFinish = () => minDone && ready && finish.play();
+
+      gsap.to(state, {
+        v: 90,
+        duration: MIN_TIME,
+        ease: "power2.out",
+        onUpdate: render,
+        onComplete: () => {
+          minDone = true;
+          tryFinish();
+        },
+      });
+      markReady.current = () => {
+        ready = true;
+        tryFinish();
+      };
+    }, root);
+
+    return () => ctx.revert();
+  }, [setIsLoading, introDone]);
+
+  useEffect(() => {
+    if (heroReady) markReady.current();
+  }, [heroReady]);
+
+  return (
+    <div
+      ref={root}
+      className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-10 bg-black"
+      style={{ clipPath: "inset(0% 0% 0% 0%)" }}
+    >
+      <div className="relative h-48 w-48 md:h-72 md:w-72">
+        <div data-base className="absolute inset-0">
+          <FerrariLogo className="h-full w-full" />
+        </div>
+        <div data-lit className="absolute inset-0">
+          <FerrariLogo className="h-full w-full" />
+        </div>
+      </div>
+
+      <div
+        data-ui
+        className="flex items-end gap-1 leading-none text-white"
+        style={{ fontFamily: "Syncopate, sans-serif", fontWeight: 700 }}
+      >
+        <span data-count className="text-5xl md:text-7xl">
+          000
+        </span>
+        <span className="mb-1 text-lg text-red-500 md:text-2xl">%</span>
+      </div>
+
+      <div
+        data-ui
+        className="absolute left-6 right-6 top-6 flex justify-between font-mono text-[10px] tracking-[0.35em] text-white/40 md:left-10 md:right-10 md:top-10"
+      >
+        <span>SCUDERIA FERRARI</span>
+        <span>LOADING EXPERIENCE</span>
+      </div>
+    </div>
+  );
+}
+
+export default Preloader;
+
+
+
+============================================================
+FILE: src/components/canvas/Scene.jsx
+============================================================
+import { Canvas } from "@react-three/fiber";
+import {
+  OrbitControls,
+  Environment,
+  Lightformer,
+  ContactShadows,
+  SoftShadows,
+} from "@react-three/drei";
+import * as THREE from "three";
+
+const CAR_TARGET = new THREE.Vector3(-1.921, 1.44, 3.727);
+const CAM_POSITION = [-23.545, 35.709, -0.932];
+
+function Scene({ children, debug = false, headlightsOn, active = true }) {
+  return (
+    <Canvas
+      frameloop={active ? "always" : "never"}
+      shadows="soft"
+      camera={{ position: CAM_POSITION, fov: 23 }}
+      gl={{
+        antialias: true,
+        alpha: true,
+        toneMapping: THREE.ACESFilmicToneMapping,
+        powerPreference: "high-performance",
+      }}
+      dpr={[1, 1.5]}
+      onCreated={({ camera, gl }) => {
+        camera.lookAt(CAR_TARGET);
+        gl.setClearColor(0x000000, 0);
+      }}
+    >
+      {/* soft, diffused shadow edge. If you ever see artifacts, delete this one line. */}
+      <SoftShadows size={18} samples={12} focus={0.4} />
+
+      <ambientLight intensity={0.4} />
+
+      <directionalLight
+        position={[6, 14, 5]}
+        intensity={1.4}
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-near={1}
+        shadow-camera-far={40}
+        shadow-camera-left={-14}
+        shadow-camera-right={14}
+        shadow-camera-top={14}
+        shadow-camera-bottom={-14}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.05}
+      />
+
+      {headlightsOn && (
+        <>
+          <spotLight
+            position={[-2.6, 1.7, 5.4]}
+            target-position={[-2.6, 0.2, 12]}
+            intensity={12}
+            angle={Math.PI / 4}
+            penumbra={0.6}
+            color="#fff6e0"
+          />
+          <spotLight
+            position={[-1.2, 1.7, 5.4]}
+            target-position={[-1.2, 0.2, 12]}
+            intensity={12}
+            angle={Math.PI / 4}
+            penumbra={0.6}
+            color="#fff6e0"
+          />
+        </>
+      )}
+
+      <ContactShadows
+        position={[-1.921, 0.085, 3.727]}
+        opacity={0.35}
+        scale={22}
+        blur={3}
+        far={5}
+        color="#5a3d00"
+      />
+
+      <Environment resolution={256}>
+        <Lightformer intensity={2} position={[0, 10, -5]} scale={[20, 20, 1]} />
+        <Lightformer
+          intensity={1.5}
+          position={[-10, 5, 5]}
+          scale={[15, 8, 1]}
+        />
+        <Lightformer intensity={1.5} position={[10, 5, 5]} scale={[15, 8, 1]} />
+      </Environment>
+
+      {children}
+      {debug && <OrbitControls target={CAR_TARGET} makeDefault />}
+    </Canvas>
+  );
+}
+
+export default Scene;
+
+
+============================================================
+FILE: src/components/canvas/CarModel.jsx
+============================================================
+// canvas/CarModel.jsx
+import { useGLTF } from "@react-three/drei";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { carTrack } from "./carTrack";
+
+/* ───────────── Hover explode offsets ───────────── */
+const EXPLODE_MAP = [
+  { name: "Tire.001_22", offset: [-0.7, 0.05, -0.35] },
+  { name: "Tire.002_26", offset: [-0.7, 0.05, 0.35] },
+  { name: "Tire.003_30", offset: [0.7, 0.05, -0.35] },
+  { name: "Tire.004_34", offset: [0.7, 0.05, 0.35] },
+
+  { name: "Rims_21", offset: [-0.35, 0, 0] },
+  { name: "Rims.002_25", offset: [-0.35, 0, 0] },
+  { name: "Rims.001_29", offset: [0.35, 0, 0] },
+  { name: "Rims.003_33", offset: [0.35, 0, 0] },
+
+  { name: "Brake_19", offset: [0.2, 0, 0] },
+  { name: "Brake.001_23", offset: [0.2, 0, 0] },
+  { name: "Brake.002_27", offset: [-0.2, 0, 0] },
+  { name: "Brake.003_31", offset: [-0.2, 0, 0] },
+
+  { name: "Headlights_17", offset: [0, 0.15, -0.7] },
+  { name: "Mirror_16", offset: [0, 0.55, 0] },
+  { name: "GlassMain_14", offset: [0, 0.9, 0] },
+  { name: "GlassBack_18", offset: [0, 0.7, 0.35] },
+  { name: "GlassOther_3", offset: [0, 0.5, 0] },
+  { name: "RearLight_7", offset: [0, 0.12, 0.55] },
+  { name: "RedGlass_15", offset: [0, 0.12, 0.7] },
+  { name: "Logos_5", offset: [0, 0.35, -0.15] },
+  { name: "Grid_4", offset: [0, -0.15, -0.45] },
+  { name: "Mechanics_6", offset: [0, -0.55, 0] },
+  { name: "Springs_8", offset: [0, -0.4, 0] },
+];
+
+/* ───────────── Drive / wheel settings ───────────── */
+const WHEELS = {
+  FL: "Tire.001_22",
+  RL: "Tire.002_26",
+  FR: "Tire.003_30",
+  RR: "Tire.004_34",
+};
+const DRIVE_DISTANCE = 14;
+const DIR = 1;
+const SCROLL_VIEWPORTS = 1.5;
+const KEEP_CALIPERS_STILL = true;
+
+/* ───────────── Paint settings ───────────── */
+// Check the console on load: "[Paint] materials" lists every material name.
+// If the wrong part gets painted, put the exact body material name(s) here,
+// e.g. ["Body"]. null = auto-detect.
+const PAINT_MATERIALS = null;
+const PAINT_INCLUDE = /(body|paint|carpaint|exterior|coat|lacquer)/i;
+const PAINT_EXCLUDE =
+  /(glass|window|tire|tyre|rubber|rim|wheel|brake|light|lamp|logo|grid|mech|spring|mirror|chrome|interior|seat|leather|carbon|plane|text|font|metal|black|disc|caliper)/i;
+const PAINT_SECONDS = 1.8; // sweep duration (keep in sync with the CSS background transition)
+const PAINT_GLOW = 1.4; // brightness of the glowing leading edge
+const PAINT_SOFTNESS = 0.16; // edge softness as a fraction of car length
+
+/* ───────────── Helpers ───────────── */
+const safe = (name) => THREE.PropertyBinding.sanitizeNodeName(name);
+const easeInOutQuart = (t) =>
+  t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+
+const _target = new THREE.Vector3();
+const _q = new THREE.Quaternion();
+const _pq = new THREE.Quaternion();
+const _c = new THREE.Vector3();
+const UP = new THREE.Vector3(0, 1, 0);
+
+function visibleDeep(n) {
+  for (let o = n; o; o = o.parent) if (!o.visible) return false;
+  return true;
+}
+
+function findPaintMaterials(scene) {
+  const counts = new Map();
+  scene.traverse((n) => {
+    if (!n.isMesh || !visibleDeep(n)) return;
+    const mats = Array.isArray(n.material) ? n.material : [n.material];
+    const verts = n.geometry?.attributes?.position?.count ?? 0;
+    mats.forEach((m) => m && counts.set(m, (counts.get(m) || 0) + verts));
+  });
+  const all = [...counts.keys()];
+
+  let picked;
+  if (PAINT_MATERIALS) {
+    picked = all.filter((m) => PAINT_MATERIALS.includes(m.name));
+  } else {
+    picked = all.filter(
+      (m) => PAINT_INCLUDE.test(m.name) && !/glass|window/i.test(m.name),
+    );
+    if (!picked.length) {
+      // fallback: biggest non-excluded material is almost always the body
+      picked = all
+        .filter((m) => !PAINT_EXCLUDE.test(m.name))
+        .sort((a, b) => counts.get(b) - counts.get(a))
+        .slice(0, 1);
+    }
+  }
+
+  console.info(
+    "[Paint] materials:",
+    all.map((m) => `${m.name || "(unnamed)"} (${counts.get(m)} verts)`),
+    "→ painting:",
+    picked.map((m) => m.name || "(unnamed)"),
+  );
+  return picked;
+}
+
+function makePaintUniforms() {
+  return {
+    uFrom: { value: new THREE.Color() },
+    uTo: { value: new THREE.Color() },
+    uProgress: { value: 1 },
+    uDir: { value: new THREE.Vector3(0, 0, 1) },
+    uOrigin: { value: new THREE.Vector3() },
+    uMin: { value: -2 },
+    uMax: { value: 2 },
+    uSoft: { value: 0.5 },
+    uGlow: { value: PAINT_GLOW },
+  };
+}
+
+// Injects a world-space "paint wipe" into MeshStandard/Physical materials.
+function patchPaint(U) {
+  return (shader) => {
+    Object.assign(shader.uniforms, U);
+
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying vec3 vPaintW;")
+      .replace(
+        "#include <project_vertex>",
+        "#include <project_vertex>\nvPaintW = (modelMatrix * vec4(transformed, 1.0)).xyz;",
+      );
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+         varying vec3 vPaintW;
+         uniform vec3 uFrom;
+         uniform vec3 uTo;
+         uniform float uProgress;
+         uniform vec3 uDir;
+         uniform vec3 uOrigin;
+         uniform float uMin;
+         uniform float uMax;
+         uniform float uSoft;
+         uniform float uGlow;`,
+      )
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+         {
+           float t = dot(vPaintW - uOrigin, uDir);
+           float front = mix(uMin - uSoft, uMax + uSoft, uProgress);
+           float m = 1.0 - smoothstep(front - uSoft, front + uSoft, t);
+           diffuseColor.rgb = mix(uFrom, uTo, m);
+
+           float band = exp(-pow((t - front) / (uSoft * 0.55), 2.0));
+           float env = sin(uProgress * 3.14159265);
+           totalEmissiveRadiance += mix(uTo, vec3(1.0), 0.35) * band * env * uGlow;
+         }`,
+      );
+  };
+}
+
+function buildWheelRig(scene) {
+  const tires = {};
+  for (const [key, name] of Object.entries(WHEELS)) {
+    const node = scene.getObjectByName(safe(name));
+    if (!node) {
+      console.warn("[Wheels] missing node:", name, "→", safe(name));
+      return null;
+    }
+    tires[key] = node;
+  }
+
+  scene.updateWorldMatrix(true, true);
+  const wp = (n) => n.getWorldPosition(new THREE.Vector3());
+
+  const front = wp(tires.FL).add(wp(tires.FR)).multiplyScalar(0.5);
+  const rear = wp(tires.RL).add(wp(tires.RR)).multiplyScalar(0.5);
+  const forward = front.sub(rear).setY(0).normalize();
+
+  const axleWorld = wp(tires.FR).sub(wp(tires.FL)).setY(0).normalize();
+
+  const rollDir = new THREE.Vector3().crossVectors(UP, forward);
+  const sign = axleWorld.dot(rollDir) >= 0 ? 1 : -1;
+
+  const radius =
+    new THREE.Box3().setFromObject(tires.FL).getSize(new THREE.Vector3()).y / 2;
+
+  const spinners = [];
+  Object.values(tires).forEach((tire) => {
+    let nodes = [tire];
+    if (KEEP_CALIPERS_STILL) {
+      const kids = tire.children.filter(
+        (c) => !c.name.startsWith("Brake") || c.name.startsWith("BrakeDisc"),
+      );
+      if (kids.length) nodes = kids;
+    }
+    nodes.forEach((node) => {
+      node.parent.getWorldQuaternion(_pq);
+      const axis = axleWorld
+        .clone()
+        .applyQuaternion(_pq.clone().invert())
+        .normalize();
+      spinners.push({ node, axis, base: node.quaternion.clone() });
+    });
+  });
+
+  return { forward, sign, radius, spinners };
+}
+
+/* ───────────── Component ───────────── */
+function CarModel({ url = "/models/ferrari.glb", paint = null, ...props }) {
+  const { scene: original } = useGLTF(url);
+  const scene = useMemo(() => original.clone(true), [original]);
+
+  const groupRef = useRef();
+  const groupBase = useRef(new THREE.Vector3());
+  const partsRef = useRef([]);
+  const rigRef = useRef(null);
+  const scrollTarget = useRef(0);
+  const scrollSmooth = useRef(0);
+  const [hovered, setHovered] = useState(false);
+
+  const paintU = useRef(null);
+  if (!paintU.current) paintU.current = makePaintUniforms();
+  const paintState = useRef({
+    ready: false,
+    original: new THREE.Color(),
+    t: 1,
+  });
+
+  useEffect(() => {
+    const onScroll = () => {
+      scrollTarget.current = THREE.MathUtils.clamp(
+        window.scrollY / (window.innerHeight * SCROLL_VIEWPORTS),
+        0,
+        1,
+      );
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Setup: hide leftovers, shadows, explode parts, wheel rig, paint
+  useLayoutEffect(() => {
+    scene.traverse((node) => {
+      const n = node.name.toLowerCase();
+
+      if (n.includes("plane") || n.includes("text") || n.includes("font")) {
+        node.visible = false;
+        node.raycast = () => null;
+        return;
+      }
+
+      if (node.isMesh) {
+        const matName = (node.material?.name || "").toLowerCase();
+        const isGlass =
+          matName.includes("glass") || matName.includes("windows");
+        node.castShadow = !isGlass;
+        node.receiveShadow = false;
+      }
+    });
+
+    partsRef.current = EXPLODE_MAP.map((entry) => {
+      const node = scene.getObjectByName(safe(entry.name));
+      if (!node) {
+        console.warn("[Explode] missing node:", entry.name, "→", safe(entry.name));
+        return null;
+      }
+      return {
+        node,
+        basePos: node.position.clone(),
+        offset: new THREE.Vector3(...entry.offset),
+      };
+    }).filter(Boolean);
+
+    if (groupRef.current) groupBase.current.copy(groupRef.current.position);
+    rigRef.current = buildWheelRig(scene);
+
+    /* ── car footprint, so the FERRARI letters can react ── */
+    scene.updateWorldMatrix(true, true);
+    {
+      const fbox = new THREE.Box3();
+      const ftmp = new THREE.Box3();
+      scene.traverse((n) => {
+        if (n.isMesh && visibleDeep(n)) fbox.union(ftmp.setFromObject(n));
+      });
+      const centre = fbox.getCenter(new THREE.Vector3());
+      const o = new THREE.Vector3();
+      groupRef.current?.getWorldPosition(o);
+      carTrack.offset.copy(centre).sub(o).setY(0);
+      const sz = fbox.getSize(new THREE.Vector3());
+      carTrack.radius = Math.max(sz.x, sz.z) * 0.35;
+      carTrack.ready = true;
+    }
+
+    /* ── paint setup ── */
+    const U = paintU.current;
+    const ps = paintState.current;
+    const clones = [];
+    const found = findPaintMaterials(scene);
+
+    if (found.length) {
+      // clone so we never mutate the cached GLTF materials
+      const swap = new Map();
+      found.forEach((m) => {
+        const c = m.clone();
+        c.customProgramCacheKey = () => "ferrari-paint-sweep";
+        c.onBeforeCompile = patchPaint(U);
+        c.needsUpdate = true;
+        swap.set(m, c);
+        clones.push(c);
+      });
+      scene.traverse((n) => {
+        if (!n.isMesh) return;
+        n.material = Array.isArray(n.material)
+          ? n.material.map((m) => swap.get(m) || m)
+          : swap.get(n.material) || n.material;
+      });
+
+      ps.original.copy(found[0].color);
+      U.uFrom.value.copy(ps.original);
+      U.uTo.value.copy(ps.original);
+      U.uProgress.value = 1;
+      ps.t = 1;
+
+      // sweep direction = the car's nose direction; range = car length
+      const dir = rigRef.current ? rigRef.current.forward : new THREE.Vector3(0, 0, 1);
+      U.uDir.value.copy(dir);
+
+      scene.updateWorldMatrix(true, true);
+      const origin = new THREE.Vector3();
+      groupRef.current?.getWorldPosition(origin);
+      const box = new THREE.Box3();
+      const b = new THREE.Box3();
+      scene.traverse((n) => {
+        if (n.isMesh && visibleDeep(n)) box.union(b.setFromObject(n));
+      });
+      let min = Infinity;
+      let max = -Infinity;
+      for (let i = 0; i < 8; i++) {
+        _c.set(
+          i & 1 ? box.max.x : box.min.x,
+          i & 2 ? box.max.y : box.min.y,
+          i & 4 ? box.max.z : box.min.z,
+        );
+        const t = _c.sub(origin).dot(dir);
+        min = Math.min(min, t);
+        max = Math.max(max, t);
+      }
+      U.uMin.value = min;
+      U.uMax.value = max;
+      U.uSoft.value = (max - min) * PAINT_SOFTNESS;
+      ps.ready = true;
+    } else {
+      console.warn("[Paint] no paint material found. Set PAINT_MATERIALS.");
+      ps.ready = false;
+    }
+
+    return () => clones.forEach((c) => c.dispose());
+  }, [scene]);
+
+  // Start a sweep whenever the paint prop changes
+  useEffect(() => {
+    const ps = paintState.current;
+    if (!ps.ready) return;
+    const U = paintU.current;
+    const to = paint ? new THREE.Color(paint) : ps.original;
+    if (U.uTo.value.equals(to)) return;
+
+    // freeze whatever is currently dominant as the "from" color
+    if (ps.t >= 1 || U.uProgress.value > 0.5) U.uFrom.value.copy(U.uTo.value);
+    U.uTo.value.copy(to);
+    U.uProgress.value = 0;
+    ps.t = 0;
+  }, [paint, scene]);
+
+  useFrame((_, delta) => {
+    // ── Paint sweep ──
+    const U = paintU.current;
+    const ps = paintState.current;
+    if (ps.t < 1) {
+      ps.t = Math.min(1, ps.t + delta / PAINT_SECONDS);
+      U.uProgress.value = easeInOutQuart(ps.t);
+      if (ps.t >= 1) {
+        U.uProgress.value = 1;
+        U.uFrom.value.copy(U.uTo.value);
+      }
+    }
+    if (groupRef.current) groupRef.current.getWorldPosition(U.uOrigin.value);
+    // ── publish car position for the letters ──
+    if (groupRef.current) {
+      groupRef.current.getWorldPosition(carTrack.pos);
+      carTrack.pos.add(carTrack.offset);
+    }
+
+    // ── Smooth scroll ──
+    scrollSmooth.current = THREE.MathUtils.damp(
+      scrollSmooth.current,
+      scrollTarget.current,
+      4,
+      delta,
+    );
+
+    // ── Drive + roll wheels ──
+    const rig = rigRef.current;
+    if (rig && groupRef.current) {
+      const d = scrollSmooth.current * DRIVE_DISTANCE * DIR;
+
+      groupRef.current.position
+        .copy(rig.forward)
+        .multiplyScalar(d)
+        .add(groupBase.current);
+
+      const angle = (rig.sign * d) / rig.radius;
+      for (const s of rig.spinners) {
+        _q.setFromAxisAngle(s.axis, angle);
+        s.node.quaternion.copy(s.base).premultiply(_q);
+      }
+    }
+
+    // ── Hover explode ──
+    const amount = hovered ? 1 : 0;
+    for (const { node, basePos, offset } of partsRef.current) {
+      _target.copy(basePos).addScaledVector(offset, amount);
+      node.position.x = THREE.MathUtils.damp(
+        node.position.x,
+        _target.x,
+        6,
+        delta,
+      );
+      node.position.y = THREE.MathUtils.damp(
+        node.position.y,
+        _target.y,
+        6,
+        delta,
+      );
+      node.position.z = THREE.MathUtils.damp(
+        node.position.z,
+        _target.z,
+        6,
+        delta,
+      );
+    }
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      {...props}
+      onPointerEnter={(e) => {
+        e.stopPropagation();
+        setHovered(true);
+        document.body.style.cursor = "pointer";
+      }}
+      onPointerLeave={(e) => {
+        e.stopPropagation();
+        setHovered(false);
+        document.body.style.cursor = "auto";
+      }}
+    >
+      <primitive object={scene} />
+    </group>
+  );
+}
+
+useGLTF.preload("/models/ferrari.glb");
+
+export default CarModel;
+
+
+
+============================================================
+FILE: src/components/canvas/GroundPlane.jsx
+============================================================
+// Invisible except where a shadow lands, so the CSS gradient behind the canvas shows through.
+function GroundPlane(props) {
+  return (
+    <mesh rotation={[-Math.PI / 2, 0, 0]} receiveShadow {...props}>
+      <planeGeometry args={[300, 300]} />
+      <shadowMaterial
+        transparent
+        opacity={0.34}
+        color="#5a3d00"
+        depthWrite={false}
+      />
+    </mesh>
+  );
+}
+
+export default GroundPlane;
+
+
+============================================================
+FILE: src/components/canvas/HeroText.jsx
+============================================================
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Text } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import * as THREE from "three";
+import { carTrack } from "./carTrack";
+
+const WORD = "FERRARI";
+const FONT_SIZE = 5.5;
+const GAP = FONT_SIZE * 0.07;
+const BLEED = 1.06;
+
+/* ── car-pass reaction (tune these) ── */
+const SINK_DEPTH = 2.2; // how far a letter drops when the car is over it
+const SINK_INNER = 0.6; // full sink within this × letter half-width of the car
+const SINK_REACH = 1.4; // × car radius: how far the falloff extends
+const SINK_SPEED = 9; // damping: higher = snappier
+
+const BASE_COLOR = new THREE.Color("#1e2126");
+const HOVER_COLOR = new THREE.Color("#e11d48");
+const _w = new THREE.Vector3();
+
+function Letter({ char, index, x, onMeasure }) {
+  const meshRef = useRef();
+  const inkRef = useRef([0, 0]);
+  const [hovered, setHovered] = useState(false);
+
+  useEffect(() => {
+    if (meshRef.current?.material)
+      meshRef.current.material.color.copy(BASE_COLOR);
+  }, []);
+
+  useFrame((_, delta) => {
+    const m = meshRef.current;
+    if (!m) return;
+
+    let near = 0;
+    const [minX, maxX] = inkRef.current;
+    if (carTrack.ready && maxX > minX) {
+      _w.set((minX + maxX) / 2, 0, 0);
+      m.localToWorld(_w);
+      const halfW = ((maxX - minX) / 2) * m.matrixWorld.getMaxScaleOnAxis();
+      const d = Math.hypot(_w.x - carTrack.pos.x, _w.z - carTrack.pos.z);
+      const inner = halfW * SINK_INNER;
+      near =
+        1 -
+        THREE.MathUtils.smoothstep(
+          d,
+          inner,
+          inner + carTrack.radius * SINK_REACH,
+        );
+    }
+
+    const targetZ = Math.min(hovered ? -2.2 : 0, -SINK_DEPTH * near);
+    m.position.z = THREE.MathUtils.damp(
+      m.position.z,
+      targetZ,
+      SINK_SPEED,
+      delta,
+    );
+    m.material.color.lerp(hovered ? HOVER_COLOR : BASE_COLOR, 0.12);
+  });
+
+  return (
+    <Text
+      ref={meshRef}
+      font="/fonts/Syncopate-Bold.ttf"
+      fontSize={FONT_SIZE}
+      anchorX="left"
+      anchorY="middle"
+      position={[x, 0, 0]}
+      onSync={(troika) => {
+        const info = troika.textRenderInfo;
+        const b = info && (info.visibleBounds || info.blockBounds);
+        if (b) {
+          inkRef.current = [b[0], b[2]];
+          onMeasure(index, b[0], b[2]);
+        }
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        setHovered(true);
+        document.body.style.cursor = "pointer";
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        setHovered(false);
+        document.body.style.cursor = "auto";
+      }}
+      onPointerMove={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      {char}
+    </Text>
+  );
+}
+
+function HeroText({ position = [-8, 0.082, 2.6] }) {
+  const camera = useThree((s) => s.camera);
+  const viewport = useThree((s) => s.viewport);
+  const size = useThree((s) => s.size);
+  const letters = WORD.split("");
+
+  const [bounds, setBounds] = useState({});
+  const onMeasure = useCallback((i, min, max) => {
+    setBounds((prev) => {
+      const p = prev[i];
+      if (p && Math.abs(p[0] - min) < 1e-4 && Math.abs(p[1] - max) < 1e-4)
+        return prev;
+      return { ...prev, [i]: [min, max] };
+    });
+  }, []);
+
+  const ready = letters.every((_, i) => bounds[i]);
+
+  const layout = useMemo(() => {
+    if (!ready) return null;
+    let cursor = 0;
+    const xs = letters.map((_, i) => {
+      const [min, max] = bounds[i];
+      const x = cursor - min;
+      cursor += max - min + GAP;
+      return x;
+    });
+    return { xs, total: cursor - GAP };
+    // eslint-disable-next-line
+  }, [ready, bounds]);
+
+  const scale = useMemo(() => {
+    if (!layout) return 1;
+    const vp = viewport.getCurrentViewport(
+      camera,
+      new THREE.Vector3(position[0], position[1], position[2]),
+    );
+    return (vp.width * BLEED) / layout.total;
+    // eslint-disable-next-line
+  }, [layout, viewport, camera, size, position[0], position[1], position[2]]);
+
+  return (
+    <group
+      position={position}
+      rotation={[-Math.PI / 2, 0, 4.5]}
+      visible={ready}
+      onPointerOver={(e) => e.stopPropagation()}
+      onPointerOut={(e) => e.stopPropagation()}
+      onPointerMove={(e) => e.stopPropagation()}
+    >
+      <group scale={scale}>
+        <group position={[layout ? -layout.total / 2 : 0, 0, 0]}>
+          {letters.map((char, i) => (
+            <Letter
+              key={i}
+              char={char}
+              index={i}
+              x={layout ? layout.xs[i] : 0}
+              onMeasure={onMeasure}
+            />
+          ))}
+        </group>
+      </group>
+    </group>
+  );
+}
+
+export default HeroText;
+
+
+
+============================================================
+FILE: src/components/canvas/carTrack.js
+============================================================
+import * as THREE from "three";
+
+// Written by CarModel every frame, read by HeroText letters.
+export const carTrack = {
+  ready: false,
+  pos: new THREE.Vector3(), // car body centre (world)
+  offset: new THREE.Vector3(), // body centre relative to the car group origin
+  radius: 2, // rough footprint radius (world units)
+};
+
+
+
+============================================================
+FILE: src/components/ui/SectionHeader.jsx
+============================================================
+function SectionHeader({ index, label, coords, dark = true }) {
+  const tone = dark ? "text-white/40" : "text-black/40";
+  return (
+    <div
+      className={`pointer-events-none absolute left-6 right-6 top-6 z-10 flex justify-between font-mono text-[10px] tracking-[0.35em] md:left-10 md:right-10 md:top-10 ${tone}`}
+    >
+      <span>({String(index).padStart(2, "0")}) — {label}</span>
+      {coords && <span>{coords}</span>}
+    </div>
+  );
+}
+
+export default SectionHeader;
+
+
+
+============================================================
+FILE: src/components/ui/Navbar.jsx
+============================================================
+import { useCallback, useEffect, useState } from "react";
+import "../hero.css";
+
+const LINKS = [
+  { label: "Home", href: "#top" },
+  { label: "Models", href: "#models" },
+  { label: "Configure", href: "#configure" },
+  { label: "Heritage", href: "#heritage" },
+];
+
+export default function Navbar() {
+  const [open, setOpen] = useState(false);
+
+  // Esc closes the menu, body scroll is locked while it's open
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e) => e.key === "Escape" && setOpen(false);
+    window.addEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
+  }, [open]);
+
+  const go = useCallback(
+    (e, href) => {
+      e.preventDefault();
+      const wasOpen = open;
+      setOpen(false);
+      setTimeout(
+        () => {
+          if (href === "#top") {
+            window.scrollTo({ top: 0, behavior: "smooth" });
+          } else {
+            document
+              .querySelector(href)
+              ?.scrollIntoView({ behavior: "smooth" });
+          }
+        },
+        wasOpen ? 500 : 0,
+      );
+    },
+    [open],
+  );
+
+  return (
+    <>
+      <header className={`ho-nav${open ? " is-open" : ""}`}>
+        <a className="ho-brand" href="#top" onClick={(e) => go(e, "#top")}>
+          <span className="ho-logo">Ferrari</span>
+          <span className="ho-divider" />
+          <div className="ho-meta">
+            <div>Est. 1947</div>
+            <div>Maranello, IT</div>
+          </div>
+        </a>
+
+        <div className="ho-right">
+          <nav className="ho-links">
+            {LINKS.slice(1).map((l) => (
+              <a key={l.href} href={l.href} onClick={(e) => go(e, l.href)}>
+                {l.label}
+              </a>
+            ))}
+          </nav>
+          <button
+            className={`ho-burger${open ? " is-open" : ""}`}
+            aria-label={open ? "Close menu" : "Open menu"}
+            aria-expanded={open}
+            onClick={() => setOpen((o) => !o)}
+          >
+            <span />
+            <span />
+          </button>
+        </div>
+      </header>
+
+      <div
+        className={`ho-menu${open ? " is-open" : ""}`}
+        aria-hidden={!open}
+        data-lenis-prevent
+      >
+        <ul>
+          {LINKS.map((l, i) => (
+            <li key={l.href} style={{ "--i": i }}>
+              <a
+                href={l.href}
+                tabIndex={open ? 0 : -1}
+                onClick={(e) => go(e, l.href)}
+              >
+                <em>{String(i + 1).padStart(2, "0")}</em>
+                <span>{l.label}</span>
+              </a>
+            </li>
+          ))}
+        </ul>
+        <p className="ho-menu-foot">Maranello, Italia — Est. 1947</p>
+      </div>
+    </>
+  );
+}
+
+
+
+============================================================
+FILE: src/components/ui/FerrariLogo.jsx
+============================================================
+// Real Ferrari Cavallino Rampante — grouped into 3 animation categories:
+// .ferrari-main      → draws + fills red (body, mane, tail, main shape)
+// .ferrari-detail    → draws only, stays fill:none (tiny structural line)
+// .ferrari-highlight → fades in white AFTER red fill (shine details)
+
+function FerrariLogo(props) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192.744 192.744" {...props}>
+      <path
+        className="ferrari-main"
+        d="M87.053 118.908l-.334.816.223 1.48.759 3.313 1.314 4.369 1.092 2.61 1.462 3.332 1.037 1.962 1.592 2.888 1.906 3.219 1.5 2.075 1.258 1.684.056.926-.166.759-.703.277-2.111.111-3.702-.221-3.054-.39-2.684-.481-3.259-.925-1.647-.722-1.092-.481-1.241-.223-1.425.056-.758.333h-1.037l-2.462-.389-1.407-.481-1.536-.111-2.444-.054-1.851-.168h-1.703l-1.684.111-1.148.48-.815.223-.278.389.056.76.777 1.257 1.463 2.019.87.369 1.37.982 1.573.871 1.703.554 2.444.056 2.184-.223 1.851-.424 1.574-.5.666.333.315.647.555.167 1.351-.056 1.703.112.871.277 1.036-.277 3.369.423 2.295.334 3.758.816 2.739.813 2.704.927 2.385 1.092.927.666 2.463.111 1.313-.333.703-1.426.758-1.739-.218-1.407-.926-1.759-1.24-2.555-.984-2.665-.722-3-.313-2.572v-2.499l.259-2.943.334-1.482-.39-1.257-.813-.648-1.629-1.203-1.151-.815-.218-1.574-.538-1.684-1.02-1.648-1.091-1.406-1.369-1.313-1.741-1.316-1.962-1.463-1.037-.499-1.036-.314-.87.147-.759.5z"
+      />
+      <path
+        className="ferrari-main"
+        d="M80.722 8.528l-.018.722-.759.167-.981-.129-1.481.314-1.11.352-.889.056-.278.389.315.537.667.148.629-.185.722-.315.741-.037 1.573.074 1.203.37 1.425.352 2.092.944.186.445-.222.351-.981.352-.592.278-1.055.703-1.61.852-1.962 1.389-2.24 1.018-1.777 1.167-1.61.704-1.518.37-1.333.037-1.833.037-.704.185-.407.852-.315.926-.352.629-.889 1.333-.852 1.48-.574.722-.056.833.056 1.166v1.24l.759.685.667.352.796-.056 1.296-.352 1.462-.444 1.981-.796.796.037.185.5-.185.481-.667.352-2.018.759-1.518.444-.296.5-.056.537.5.444 1.055.129h.852l1.073-.037 1.167-.278 1.685-.889 1.111-.222.944-.186.722.241 1.055-.055 1.037.13.852.5 1.333.129 1.74.537.944.129 1.462-.259 1.87.13.814.314.445.759-.093.981-.222 1.203-.444 1.388-.629 1.74-.629 1.907-.667 1.74-.444 1.203-1.518 2.37-1.833 2.313-1.647 2.277-2.092 2.091-1.925 1.629-1.222 1.295-.647 2.129-.907 1.074-1.148.814-1.388 1.147-2.129 1.296-1.795.907-1.147 1.314-.815 1.056-.814.5-1.147.574-.74-.167-1.462-.667-1.629-1.055-2.388-1.055-2.684-1.407-1.388-1.055-1.722-1.388-1.888-1.555-2.036-.74-1.795-.315-2.295.481-1.629.907-1.407.981-.722 1.795-.5 1.389-.574 2.128-.647 1.295-.648 1.981-.092 2.37-.574 1.388-.648 2.203-.574 2.203-1.055 2.055-.574 2.036-.333 2.536-.907 2.129-.574 1.222-.074 1.222-.074 2.055v3.591l-.408 1.48.241 1.296-.094 2.129.741 1.703.574.407 1.055-.334.98-.889 1.407-1.703 1.222-1.962.481-1.629-.314-1.314-.408-1.629-.5-1.962-.481-2.054-.259-1.556v-1.462l.333-1.647.814-2.518.814-1.314.741-.666.573-.889 1.056-.093.5-.314.74-.667.814-.722.74-.981.314-1.146.26-.981.074-1.314.241-1.147.574-.722.574-.167.74.241 1.056.574 1.147 1.314 1.222 1.795 1.388 1.629 1.481 1.314 1.314 1.055 1.292.573.407.815-.407.408-1.389-.315-1.962-.167-2.536-.5-2.443-.481-2.943-.093-1.721.093-1.313.814-1.388 1.222-1.148 1.962-.889 2.221-.092 1.629.5 2.943 1.147 3.758.574 2.943.722 2.869.5 2.019.241 1.888.647 2.129.5 3.258.481 1.147 1.24.981 1.148 1.146 1.295 1.963.907 2.295 1.388 2.036 2.037 1.962 1.48.907.98.074.814-.241.5-1.146.555-.981.333-1.388v-3.185l-.407-.907c-.074 0-.074-.573-.074-.647l-.167-.573-.667-.98-1.222-1.223-2.277-.98-.833-.26-.148-1.388.074-.889-1.555-1.796-.981-2.296-.815-3.259-.666-3.017-1.129-2.37-.407-2.869.647-1.721 1.148-.648h.888l1.314 1.148 1.888 1.148 1.962.722 4.738 2.295 2.296 1.314v1.222l2.11 1.221 2.703.907h5.646l-.407 1.056-.24.573.722 1.37 1.388 2.055 2.222 2.202 2.684 2.944 2.295 2.035 4.295 3.295 3.48 1.869 2.61 1.389 3.351 2.277 3.091 2.203 2.666 2.258 2.776 3.758.129 1.572.629 1.63 1.703 1.222 1.556.611.963-.131.761-.739 1.092-1.166.26-1.573 1.295-2.24.277-1.722.205-1.906.129-1.5.426-.942.869-.426h.834l.055.629-.609.666-.537 1.443-.408.889v1.092l-.147 2.314-.332 1.166-1.019 1.758-1.371 2.26-1.368 2.461-.813 3.203-.408 3.351.408 3.739.537 2.185 1.295 2.869 1.647 3.406 1.295 2.665 1.776 2.796 2.109 2.592.408.888v.611l-.277.759-.74 1.222-1.166 1.629-2.389 3.074-2.389 2.59-2.184 2.39-.943.555-1.926.74-1.148 1.093-.611 1.24-1.369 1.702-1.553 1.702-1.907 1.981-1.167 2.036-.685 2.055-.407 1.702.074 1.37.814.87h3l1.294-.129 1.354-.813 1.776-.815.276-.685h.611l.943-.408.889-.832.482-3.258-.279-.687-.129-.685.482.129.535.148.557-.408.889-.555.943-1.222 1.166-1.647.611-1.499.129-1.223.76-.556 1.092-.61.889-.537.74-1.499 1.574-1.646 2.941-2.722 2.239-1.499 2.261-1.24.534-.537.205-.556.479-.61-.334-.813-.071-1.5-.298-1.405-.352-.814-.777-1.333-1.239-1.556-.61-1.166-.13-1.223v-1.646l.276-.943.74-2.536.758-1.222.816-.481 1.498-.944 1.777-1.518 2.389-2.035 1.629-1.703 1.646-1.907 1.703-1.925 1.223-2.166 1.018-1.852.963-2.109.685-2.334.205-2.164.129-1.647.556-.537.61-.147.537.353.481 1.147.129 1.572.224 1.499-.147 1.02-.131 1.573v3.351l.407 2.647.479.685.408-.056.203-.481-.277-1.092v-1.853l.556-1.555.26-2.258.276-1.574.354-.74h.407l.332.333.334 1.296.276 1.24-.129 1.962-.408 2.666-1.239 2.593-1.146 2.461-.687 2.11-.129 1.296.129 1.499.479 1.443h.89l.463-.629-.261-.685-.202-1.223.813-1.093.945-1.296.629-1.221 1.498-2.39 1.223-2.185.537-2.389.48-3.146v-3.129l-.609-2.185-1.223-1.703-.148-.813.557-.277.686.332.889 1.093 1.092 1.98.463 2.312.277 3.073.686 2.129.074.056.943 2.11.61.222.276-.555-.073-.334-.464-1.572-.073-1.573.073-2.313.408-2.592v-1.296l-.147-1.092-1.093-2.186-.944-1.573.334-.61 1.298-.277 1.774-.813 1.907-1.02 1.703-1.499 2.185-2.942 1.239-2.443 1.019-2.332.334-3.739.074-3.351-.537-4.146-.629-2.999-.537-3.073-.334-3.202.261-2.036.555-2.536 1.147-2.518 1.646-2.591.611-1.647.129-.814-.535-.74-.756-.355v1.167l-.611.685-1.092 1.629-.611.407-1.703 2.055-.684 1.092-.814 1.833-.889.148-.814-.481-.482-2.185.131-2.517.556-2.333 1.353-2.185 2.737-4.091 1.632-3.332.202-2.333-.26-.74-.479.481-.814 2.036-1.24 2.055-1.834 1.5-2.109 2.036-3.146 3.684-.61-.056-.203-.629-.074-1.5.203-2.795.963-3.128 1.703-3.48 2.258-2.795 2.795-2.388.26-.555-.334-.259-1.424.74-1.168.759-1.98 1.703-2.461 2.185-1.76 2.388-1.721 3.128-.943 2.536-.277 2.518-.131 3.406.814 3.554.814 3.073 1.573 4.832 1.019 5.794.611 4.423v2.39l-.261 2.517-.405 2.057-.761 2.312-2.869 3.609-2.926 2.665-3.757 2.11-3.61.203-.479-1.759-1.295-2.536-1.777-2.443-1.166-1.442-1.555-2.11-3.353-3.201-3.405-2.795-1.498-1.168-4.703-3.184-6.756-5.665-3.685-4.572-4.034-6.608-1.093-3.961.276-2.462.556-.481 1.427.962 2.258 1.092 1.834-.074 2.108.963 2.259 1.37 1.166.944 1.5 1.037 1.555.204.352-.685-.408-.074-.48.204-.758-.481-.668-1.018-.961-1.574-1.852-1.702-1.832-.685-1.02-.204.205-.537h1.424l1.647.537 2.388 1.573 1.094.481.406-.556-.687-.944-1.851-1.648-2.869-1.499-3.463-1.351-.684-.555.684-.481 1.556.759 2.871.481 3.071 1.222 1.629.814 2.869.407 2.056-.277 1.146-.537 1.574-.963.686-.666.074-.481-.637.052-.608.629-2.037.667-1.777.277-1.5-.204-1.443-1.147-1.295-1.518-1.555-1.147-2.332-.481-2.24-.759-.963-.611.074-.536.889.129h1.98l1.979-.129h2.037l1.093-.204.889.74 1.424.352h1.166l.537-.407-.943-.278-1.166-.759-1.223-1.147-1.98-1.037-1.629-.204-1.498-.204-.557-.333 1.094-.611h1.775l1.371.407 1.352.686 2.184.944 2.184.074 1.166-.555.334-.741-.889-.407-1.832-.074-1.574-.537-1.368-1.166-1.5-.759-1.979-.333-1.703-.611-.74-.962.129-.481 1.094.222 1.369.407.814.611 1.166.129.129-.611-1.221-.962-.354-.87 1.646.259 1.555.814 1.98.222.76 1.425 2.035 1.222.111-.019.445-.185.537-.333-.261-.407-.76.055-.685-.944-1.371-2.11-2.387-2.128-2.443-1.092-.686-.814-1.5-1.777-1.369-.74-.203-.685.609-.407 1.445.333 2.85.814 1.371.481.889 1.24 1.424.741h1.093l1.444.407 1.572-.278.611-.537-.889-.759-1.295-.333-1.5-.204-.89-.759-1.166-1.703-.276-1.092-1.5-1.352-1.629-1.037-1.853-1.148-2.035-1.906-.129-.556h.461l2.666 2.11 2.722 1.573 1.444 1.092L120 45.325l1.646.888.945.278.48-.759-.684-.259-1.427-1.296-.407-1.443-1.498-1.629-1.24-1.037-.611-1.555-2.109-3.146-2.869-2.518-.131-.814 1.018.129 1.445.741 2.312.962 2.389.13 1.777.833 1.906.333 1.629-.481-.129-.685-1.852-.408-1.63-.74-3.276-1.573-1.775-.962-.945-1.148.334-.408.48.333.74.278.963.074h1.574l1.35-.148 2.057-.129 1.572.611 1.629 1.166.686.204.074-.611-.557-.555-1.629-1.5-2.535-1.296-1.832-.204-3.48-.204-.813-.962-1.776-1.777-1.98-1.351-.74-.685.611-.481.943.407 1.702.889 1.925.685 2.592.611h2.24l1.852 2.055 1.5.888.537-.555-2.037-2.999-3.203-2.313-2.666-.629-2.258-2.37-1.98-1.166-2.721-.685 1.5-1.295 2.664-.889 1.98-.611.463-.61-.259-.481-1.094-.277-1.035-.204-7.7.148-1.369-1.518-1.556-1.018-1.979-.889-2.593-.408H96.9l-.61-.814-2.11-2.258L91.644 2.9l-1.555 2.592-.074.814.741.962.074.814-.536.481-1.722.129-3.129-.889-3.073-.663-1.426.055-2.332.481.277.815 1.296-.056.537.093z"
+      />
+      <path
+        className="ferrari-main"
+        d="M88.997 7.676l-.149-1.573-2.24-2.721-.685-.204-.481.685.074.815-.759.684-.074.945.889.481 1.24.888h2.185z"
+      />
+      <path
+        className="ferrari-detail"
+        fill="none"
+        d="M84.628 5.899l.055-.129"
+      />
+      <path
+        className="ferrari-highlight"
+        fill="#fff"
+        d="M108.009 93.826l-3-3.888-2.593-3.813-1.925-2.998-.739-2.055-.407-1.981-.483-1.351-.758-.351-.742.203-.258 1.296.538 2.258 1.295 3.277 1.628 2.646 1.851 2.333 2.037 2.036 1.221 1.166 2.335 1.222zM67.154 24.207l-.722.999-.297 1.018.13.722.352.222 1.018-.222.759-.425.537-.538.296-.999-.296-.481-.648-.537-.537-.055-.592.296zM86.59 21.522h.833l.778-.295.055-.778-.296-.888-.352-.833-.703-.482-.907-.167-1.241.056-.777.648-.352.722.241.648.833.481.888.481 1 .407zM153.321 94.048l-.481.481.095.87.145 1.555.168 1.649.11 1.423-.073 1.63-.074 1.814-.334 1.629-.39 1.425-.666 1.389-.868 1.425-.89 1.39-.944 1.276-.869 1.147-.481.87-.353.796.073.593.448.203.832-.203 1.627-1.556 1.425-1.666.946-1.334.834-1.553.552-1.425.485-1.629.349-1.907.037-.87v-3.48l-.278-1.721-.39-1.796-.479-1.499-.239-.759-.317-.167zM81.462 105.247l.945 1.056 3.109 2.702 1.722 1.536 1.536 1.39 1.24 1.165.241.387.167.279-.482-.036-1.24-.779-2.092-1.387-3.239-2.185-1.314-.89-1.388-1.089-1.518-1.39-1.111-.869-1.333-1.296-.87-.906-.537-.834-.203-1 .037-.925.351-.353.611.037.963.575 1.036 1 .76.923.814.816.796.981.999 1.092zM74.447 63.283l.037-.5.333-.37 1.166-.481 2.425-.759 2.425-.297h1.481l1.222.26 1.147.574.907.889.056.499-.111.352-.389.074-.592-.074-.907-.26-.852-.258-1.055-.112h-1.314l-1.111-.018-.981.093-1.092.184-.87.241-.851.185-.556.037-.388-.055-.13-.204zM105.545 105.062l-.353.981-.147.776-.295 1.409-.095 1.128.261.316.537.073.276-.223.129-.591.411-.852.405-.463.445-.407.277-.647-.075-1.093-.386-.573-.224-.206h-.519l-.386.077-.261.295zM106.306 138.771h-.353l-.279-.833-.019-.945.203-1.296.463-1.776.761-1.093.685-.85.61-.075.166.555-.369 1.186-.521 1.443-.257.703-.482 1.093-.369 1.277-.11.369-.129.242zM130.164 122.444l-.442.555.073.889.776 1.073.114 1.166.181.334.354.093.386-.223.114-.519.183-.573.076-.611v-.815l-.113-.61-.426-.537-.369-.333-.444-.037-.463.148zM96.123 184.142l-.759.757-.278.556-.092.482.074.388.241.185h.222l.518-.111.536-.351.333-.501.278-.536.166-.685-.052-.388-.206-.167-.407.018-.574.353zM101.694 176.033l-.631.389-.313.39-.037.332.184.334.316.091.427-.147.349-.204.282-.389.166-.407-.058-.333-.222-.13-.463.074zM112.136 165.647l-2.556 2.575-2.108 2.276-1.5 1.666-.076.463.166.277.352.019.537-.352.963-.87 1.224-1.11 1.313-1.37 1.239-1.202 1.092-1.279.817-1.203.218-.537-.218-.276-.261-.057-.724.463-.478.517zM118.317 161.892l-.371.387-.11.315.058.315.255.149h.224l.334-.371.369-.333.165-.259-.015-.203-.187-.094-.405-.019-.317.113zM109.356 147.804h-.294l-.129.167-.037.553v.927l.184 1 .316.722.666 1.092.444.648.24.109.131-.016.071-.167-.166-.852-.166-.425-.017-.315-.019-.889-.203-1.11-.297-.833-.406-.48-.318-.131zM67.061 146.563l-.666.129-.574.186-.167.241-.018.333.296.37.203.167.445.129.5-.017.24-.075.296-.352.167-.389.074-.314-.056-.279-.24-.147-.5.018zM86.016 148.674l-1.629-.519-.241.093-.055.389.185.351 1.24.408 1.74.537 2.203.554.963.075.999.055.963.167 1.092.185.629-.036.204-.26v-.352l-.166-.222-.574-.148-1.018-.222-1.259-.092-1.333-.204-1.537-.166-.925-.13-.759-.167-.722-.296zM100.955 149.211l-.5.37-.095.352.095.314.295.13.537-.13.37-.296.203-.37v-.296l-.129-.167h-.408l-.368.093zM51.049 113.966l-.537-.112-.222.056-.093.334.112.573.277.259.389.073.315-.239.055-.37-.055-.314-.241-.26zM40.165 90.772l-.204 1.444.037 1.462.222 1.259.426 1.333.426.851.296.648.185.351.24.204h.13l.111-.167.093-.499-.259-1.721-.185-1.056-.426-1.203-.352-1.129-.018-.889-.204-.87-.204-.185h-.203l-.111.167zM55.64 88.976l.092-.296-.074-.37-.444-.408-.851-.388-1.185-.518-1.018-.5-1.111-.278-.648-.24-.592.018.444.333 1.296.777 1.148.852 1.166.722.5.222.721.111.556-.037zM39.406 79.739l-.556.963-.018.666.222.185.333-.129.333-.463.222-.518.167-.389v-.555l-.259-.167-.278.13-.166.277zM92.402 39.663l-.648.111-.851.815-1.648 2.628-1.74 3.369-.98 1.944-1.093 2.258-1.332 2.055-.333.778.055.277.352.019 1.092-.426 1.573-1.647 2.073-2.907 1.296-2.406 1.166-1.926.87-2.276.389-1.426.037-.796-.278-.444zM61.6 70.835l.37.149.112.444-.278 1.592-.778 2.184-.685 2.092-1.203 1.499-.611.463-.648.241-.37-.26-.037-.481.519-.555.536-.889.685-1.499.408-1.425.37-1.407.721-1.351.482-.685.407-.112zM39.499 66.208l-.778 1.351-.352 1.851-.093.982v.721l.167.37.481-.129.889-1.37.499-1.629.389-1.444.019-1.018-.222-.333-.592.167-.407.481zM49.309 69.003l.056.407.221.278.5.5.538.444.628.352.445.277.185-.018.093-.167-.019-.314-.241-.352-.388-.463-.648-.389-.408-.37-.351-.314-.315-.056-.185-.019-.111.204zM43.774 60.414l-.925.111-.445.315-.148.499.13.371.518.203.851-.092.889-.334.259-.425-.018-.315-.296-.277-.334-.093-.481.037zM89.996 68.836l.611.167.185.333.074.74.092.778-.184.555-.389.223-.944.018-.629-.148-.353-.463-.295-.37v-.593l.462-.592.704-.555.666-.093zM73.965 21.078l.852-.722 1.574-.758 1.573-.704 1.499-.704.685-.333.519-.074.425.093.333.537-.222.388-.425.112-.519.129-.574.481-1.277.778-1.758.481-1.092.278-1.056.074-.537-.056zM70.819 24.225l-.278.444-.037.333.241.278.296.148.37-.018.185-.093.13-.425-.037-.482-.093-.277-.259-.056h-.296l-.222.148zM74.447 27.464l-.259.019-.204.222-.037.37.111.297.204.11h.352l.277-.129.056-.278-.093-.333-.13-.203-.277-.075zM85.257 29.075l1.851-1.314 1.129-.704.685-.425h.241l.037.499-.463.37-.222.76-.574.888-1.036.499-1.055.242h-.945l-.166-.315.24-.334.278-.166zM91.495 29.723l.611-.778.704-.666.629-.425.463-.038.314.204v.574l-.166.629-.704.667-.833.518-.851.222-.408-.13-.055-.333.296-.444zM91.606 32.98l.241-.425.574-.259.999-.482 1.148-.703.537-.388.814-.39.519.13v.556l-.204.5-.722.851-.999.481-1 .407-1.037.019h-.647l-.223-.297zM89.607 15.155l-.592.203-.13.408.241.444.648-.037.537-.204.388-.444-.166-.37-.519-.185-.407.185zM100.047 11.767l-.332-.241.24-.443.926-.093.5.166.39.204.016.333-.332.148-.518.037-.5-.037-.39-.074zM101.563 13.877l.54-.018.408.093.202.129-.073.204-.297.352-.406.036-.482-.073-.278-.13-.203-.241.239-.204.35-.148zM101.455 23.392l.982-.407.85-.444.89-.5.681-.241.411-.111.405-.611-.295-.278-.573.037-.687.149-.759.296-.537.037-.073-.407.073-.778-.312-.315h-.448l-.292.37-.282.371-.442.481-.316.796v.704l.15.388-.036.407.276.093.334-.037zM101.084 61.506l.479-.037.411.333.015.278-.129.167-.371.11-.478-.037-.317-.314.077-.277.313-.223zM101.86 60.433h.556l.371-.408-.037-.296-.371-.241h-.39l-.295.093-.131.277v.408l.297.167zM102.474 56.934l.405-.074h.39l.24.203.054.315-.126.26-.374.184-.386.056-.406-.093-.131-.277v-.333l.334-.241zM102.897 55.416l.556.019.5-.149.202-.314-.146-.389-.406-.203-.484.073-.442.204-.093.333.019.222.294.204zM104.009 51.492l.573-.167h.444l.203.24-.074.426-.276.37-.26.334-.516.111h-.519l-.444-.222-.037-.352.313-.333.239-.278.354-.129zM104.582 48.567l.573-.074.519.111.222.315v.314l-.241.389-.426.074-.444.112-.556-.019-.24-.278.037-.407.187-.278.369-.259zM105.103 47.586h.552l.446-.148.573-.241.074-.481-.203-.389-.483-.166-.499.018-.352.148-.315.167-.37.333-.073.352.15.277.276.093.224.037zM33.26 94.585l.482.056.129.481-.333.407-.556-.13-.277-.537.555-.277zM104.713 44.143l.888-.463.423-.093.521.056.203.185v.204l-.203.333-.353.296-.518.186-.611.054-.5-.073-.128-.297.074-.24.204-.148zM105.509 42.662l.646-.278.259-.296.131-.296v-.278l-.11-.166-.28-.019-.386.037-.39.093-.334.203-.166.204-.058.352.075.314.296.093.317.037zM105.655 40.107l.556-.203.408-.278.092-.24.058-.407-.095-.26-.26-.074-.39.019-.461.092-.315.223-.222.221-.037.37.056.297.298.166.312.074zM105.655 33.499l.464-.019.277.093.076.24-.151.241-.239.259-.39.093h-.407l-.259-.24v-.278l.243-.241.386-.148zM105.692 37.479l.577-.278.442-.389.037-.573-.037-.352-.297-.167-.332-.092-.276.018-.151.186-.073.258-.073.334-.166.111h-.317l-.091.185.037.333.239.297.242.091.239.038zM105.769 31.5l.405-.278.427.019.257.314-.054.315-.203.277-.332.13-.316.075-.279.037-.368-.037-.095-.223.095-.296.22-.203.243-.13zM105.843 30.019l.331-.129.35-.315.021-.297-.036-.314-.224-.13-.35.056-.224.13-.239.258-.019.315v.297l.166.092.224.037zM105.045 27.057l.224-.111.294-.018.243.148.052.222-.089.333-.243.185-.22.13-.297.037-.24-.148-.056-.26.108-.221.224-.297z"
+      />
+    </svg>
+  );
+}
+
+export default FerrariLogo;
+
+
+
+============================================================
+FILE: src/components/ui/ErrorBoundary.jsx
+============================================================
+import { Component } from "react";
+
+class ErrorBoundary extends Component {
+  state = { error: null };
+  static getDerivedStateFromError(error) {
+    return { error };
+  }
+  render() {
+    if (this.state.error) {
+      return (
+        <pre
+          style={{
+            color: "red",
+            padding: 20,
+            position: "relative",
+            zIndex: 100,
+            whiteSpace: "pre-wrap",
+          }}
+        >
+          {String(this.state.error.stack || this.state.error)}
+        </pre>
+      );
+    }
+    return this.props.children;
+  }
+}
+
+export default ErrorBoundary;
+
+
+
+============================================================
+FILE: src/components/HeroOverlay.jsx
+============================================================
+import { useEffect, useRef } from "react";
+import "./hero.css";
+
+const pad = (n) => String(n).padStart(2, "0");
+
+export default function HeroOverlay({
+  car,
+  index,
+  total,
+  pending,
+  onSelect,
+}) {
+  const fadeRef = useRef(null);
+
+  // copy + specs fade out as the car starts driving, and stop being clickable
+  useEffect(() => {
+    const onScroll = () => {
+      const el = fadeRef.current;
+      if (!el) return;
+      const p = Math.min(window.scrollY / (window.innerHeight * 0.4), 1);
+      el.style.opacity = String(1 - p);
+      el.style.transform = `translateY(${-p * 24}px)`;
+      el.style.visibility = p >= 1 ? "hidden" : "visible";
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  return (
+    <div className="ho">
+      <div className="ho-fade" ref={fadeRef}>
+        <div className="ho-copy">
+          <p className="ho-eyebrow">The Art Of</p>
+          <h2 className="ho-title">Performance.</h2>
+          <p className="ho-sub">
+            Where engineering becomes
+            <br />
+            emotion.
+          </p>
+          <a
+            className="ho-cta"
+            href="#models"
+            onClick={(e) => {
+              e.preventDefault();
+              document
+                .getElementById("models")
+                ?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            <span>Explore Models</span>
+            <span>↗</span>
+          </a>
+        </div>
+
+        <div className="ho-specs" key={`specs-${car.id}`}>
+          {car.specs.map((s, i) => (
+            <div
+              className="ho-spec ho-anim"
+              style={{ animationDelay: `${i * 0.08}s` }}
+              key={s.val}
+            >
+              <div className="ho-spec-val">{s.val}</div>
+              <div className="ho-spec-sub">
+                {s.lines.map((l, j) => (
+                  <span key={j}>
+                    {l}
+                    <br />
+                  </span>
+                ))}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        <div className="ho-dots" role="tablist" aria-label="Select car">
+          {Array.from({ length: total }).map((_, i) => (
+            <button
+              key={i}
+              role="tab"
+              aria-selected={i === index}
+              aria-label={`Car ${i + 1}`}
+              className={`ho-dot${i === index ? " is-active" : ""}`}
+              onClick={() => onSelect(i)}
+            />
+          ))}
+        </div>
+
+        <div
+          className={`ho-count${pending ? " is-pending" : ""}`}
+          style={{ "--p": (index + 1) / total }}
+        >
+          <span className="ho-count-num">
+            {pad(index + 1)} / {pad(total)}
+          </span>
+          <small key={`tag-${car.id}`} className="ho-anim">
+            {pending ? "Loading…" : car.tagline}
+          </small>
+          <i />
+        </div>
+
+        <div className="ho-scroll">
+          <span className="ho-scroll-line" />
+          <span className="ho-scroll-label">Scroll to explore</span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+
+============================================================
+FILE: src/components/HeroTelemetry.jsx
+============================================================
+import { useEffect, useRef } from "react";
+import "./hero.css";
+
+/* Must match CarModel.jsx → SCROLL_VIEWPORTS */
+const SCROLL_VIEWPORTS = 1.5;
+/* Speed at which the readout hits the car's top speed (progress per second) */
+const FULL_SPEED_AT = 0.55;
+const GEARS = 7;
+
+/* p = scroll progress 0→1 over the car's drive. Edit the copy freely. */
+const CHAPTERS = [
+  { from: 0.2, to: 0.5, no: "01", title: "The Heart", text: null }, // text = car spec
+  {
+    from: 0.46,
+    to: 0.76,
+    no: "02",
+    title: "The Skin",
+    text: "Every surface shaped by wind, not by fashion.",
+  },
+  {
+    from: 0.72,
+    to: 1.01,
+    no: "03",
+    title: "The Soul",
+    text: "Some things can't be measured. Only felt.",
+  },
+];
+
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const smooth = (a, b, x) => {
+  const t = clamp01((x - a) / (b - a));
+  return t * t * (3 - 2 * t);
+};
+
+export default function HeroTelemetry({ car }) {
+  const root = useRef(null);
+  const speedEl = useRef(null);
+  const gearEl = useRef(null);
+  const rpmEl = useRef(null);
+  const chapEls = useRef([]);
+  const topSpeed = useRef(340);
+  topSpeed.current = car.topSpeed ?? 340;
+
+  useEffect(() => {
+    let target = 0;
+    let cur = 0;
+    let prev = 0;
+    let speed = 0; // smoothed 0..1
+    let last = performance.now();
+    let raf;
+
+    const onScroll = () => {
+      target = clamp01(
+        window.scrollY / (window.innerHeight * SCROLL_VIEWPORTS),
+      );
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    cur = prev = target;
+
+    const tick = (now) => {
+      const dt = Math.min((now - last) / 1000, 0.05) || 0.016;
+      last = now;
+
+      // same damping as the car, so the HUD stays in sync with the 3D
+      cur += (target - cur) * (1 - Math.exp(-4 * dt));
+      const vel = Math.abs(cur - prev) / dt; // progress / sec
+      prev = cur;
+      speed += (clamp01(vel / FULL_SPEED_AT) - speed) * (1 - Math.exp(-6 * dt));
+
+      // whole HUD: in after the hero copy fades, out before the stage ends
+      const vis = smooth(0.18, 0.32, cur);
+      const r = root.current;
+      if (r) {
+        r.style.opacity = vis.toFixed(3);
+        r.style.visibility = vis <= 0.001 ? "hidden" : "visible";
+      }
+
+      // speed / gear / rpm
+      const kmh = Math.round(speed * topSpeed.current);
+      if (speedEl.current)
+        speedEl.current.textContent = String(kmh).padStart(3, "0");
+      const g = speed * GEARS;
+      const gear = kmh < 3 ? "N" : String(Math.min(GEARS, Math.floor(g) + 1));
+      if (gearEl.current && gearEl.current.textContent !== gear)
+        gearEl.current.textContent = gear;
+      const rpm = kmh < 3 ? 0.08 : 0.25 + 0.75 * (g % 1);
+      if (rpmEl.current)
+        rpmEl.current.style.transform = `scaleY(${rpm.toFixed(3)})`;
+
+      // chapters
+      CHAPTERS.forEach((c, i) => {
+        const el = chapEls.current[i];
+        if (!el) return;
+        const inn = smooth(c.from, c.from + 0.07, cur);
+        const out = 1 - smooth(c.to - 0.07, c.to, cur);
+        const o = Math.min(inn, out);
+        el.style.opacity = o.toFixed(3);
+        el.style.transform = `translateY(${(1 - inn) * 26 - (1 - out) * 26}px)`;
+        el.style.visibility = o <= 0.001 ? "hidden" : "visible";
+      });
+
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("scroll", onScroll);
+    };
+  }, []);
+
+  const spec = car.specs[0];
+
+  return (
+    <div className="ht" ref={root} aria-hidden="true">
+      <div className="ht-chapters">
+        {CHAPTERS.map((c, i) => (
+          <div
+            className="ht-chap"
+            key={c.no}
+            ref={(el) => (chapEls.current[i] = el)}
+          >
+            <p className="ht-chap-no">
+              Chapter {c.no} <span /> 03
+            </p>
+            <h3 className="ht-chap-title">{c.title}</h3>
+            <p className="ht-chap-text">
+              {c.text ?? `${spec.val} — ${spec.lines.join(" · ")}`}
+            </p>
+          </div>
+        ))}
+      </div>
+
+      <div className="ht-speed">
+        <div className="ht-speed-row">
+          <span className="ht-speed-num" ref={speedEl}>
+            000
+          </span>
+          <small>km/h</small>
+        </div>
+        <span className="ht-label">Live velocity</span>
+      </div>
+
+      <div className="ht-gear">
+        <span className="ht-label">Gear</span>
+        <b ref={gearEl}>N</b>
+        <div className="ht-rpm">
+          <i ref={rpmEl} />
+        </div>
+        <span className="ht-label">RPM</span>
+      </div>
+    </div>
+  );
+}
+
+
+
+============================================================
+FILE: src/hooks/usePreloaderGate.js
+============================================================
+import { useCallback, useEffect, useRef } from "react";
+import useStore from "../store/useStore";
+
+export default function usePreloaderGate(
+  onOpen,
+  { minTime = 700, maxWait = 6000 } = {},
+) {
+  const heroReady = useStore((s) => s.heroReady);
+  const cb = useRef(onOpen);
+  cb.current = onOpen;
+  const st = useRef({ min: false, ready: false, fired: false });
+
+  const check = useCallback(() => {
+    const g = st.current;
+    if (g.min && g.ready && !g.fired) {
+      g.fired = true;
+      cb.current();
+    }
+  }, []);
+
+  useEffect(() => {
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+
+    const tMin = setTimeout(() => {
+      st.current.min = true;
+      check();
+    }, minTime);
+    const tMax = setTimeout(() => {
+      // failsafe: never trap the user
+      st.current.min = st.current.ready = true;
+      check();
+    }, maxWait);
+
+    return () => {
+      clearTimeout(tMin);
+      clearTimeout(tMax);
+      document.body.style.overflow = prev;
+    };
+  }, [check, minTime, maxWait]);
+
+  useEffect(() => {
+    if (heroReady) {
+      st.current.ready = true;
+      check();
+    }
+  }, [heroReady, check]);
+}
+
+
+
+============================================================
+FILE: src/hooks/useScrollProgress.js
+============================================================
+import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+
+export default function useScrollProgress(ref, onProgress) {
+  const cb = useRef(onProgress);
+  useEffect(() => {
+    cb.current = onProgress;
+  });
+
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const report = () => {
+      const r = el.getBoundingClientRect();
+      const total = r.height - window.innerHeight;
+      cb.current(total > 0 ? clamp01(-r.top / total) : 0, r); // same p as your original
+    };
+    const st = ScrollTrigger.create({
+      trigger: el,
+      start: "top bottom", // active from the moment it enters the viewport
+      end: "bottom top",
+      onUpdate: report,
+      onRefresh: report,
+    });
+    return () => st.kill();
+  }, [ref]);
+}
+
+
+
+============================================================
+FILE: src/hooks/useLenis.js
+============================================================
+import { useEffect, useRef } from "react";
+import Lenis from "lenis";
+import "lenis/dist/lenis.css";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
+
+let instance = null;
+export const scrollToTarget = (target, opts = {}) =>
+  instance?.scrollTo(target, { duration: 1.6, ...opts });
+
+export default function useLenis(isLoading) {
+  const lenisRef = useRef(null);
+
+  useEffect(() => {
+    if ("scrollRestoration" in history) history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
+
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+    lenisRef.current = instance = lenis;
+    lenis.stop();
+    lenis.on("scroll", ScrollTrigger.update);
+
+    const raf = (time) => lenis.raf(time * 1000);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      gsap.ticker.remove(raf);
+      lenis.destroy();
+      instance = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const lenis = lenisRef.current;
+    if (!lenis) return;
+    if (isLoading) lenis.stop();
+    else {
+      lenis.start();
+      ScrollTrigger.refresh();
+    }
+  }, [isLoading]);
+}
+
+
+
+============================================================
+FILE: src/utils/logoDraw.js
+============================================================
+import gsap from "gsap";
+
+// px → SVG user units, so a stroke is the same thickness on screen at any logo size
+export function strokeUnits(el, px = 1.5) {
+  const svg = el.ownerSVGElement;
+  const vb = svg?.viewBox?.baseVal;
+  const w = svg?.getBoundingClientRect().width || 1;
+  return vb && vb.width ? (px * vb.width) / w : px;
+}
+
+// Sets up the "draw" state on every logo inside `scope`
+export function prepLogo(scope, { stroke = "#ff1a1a", px = 1.5 } = {}) {
+  const main = gsap.utils.toArray(".ferrari-main", scope);
+  const detail = gsap.utils.toArray(".ferrari-detail", scope);
+  const highlight = gsap.utils.toArray(".ferrari-highlight", scope);
+  const draw = [...main, ...detail];
+
+  draw.forEach((p) => {
+    const len = p.getTotalLength();
+    gsap.set(p, {
+      strokeDasharray: len,
+      strokeDashoffset: len,
+      stroke,
+      strokeWidth: strokeUnits(p, px),
+      fill: "rgba(225,6,0,0)",
+    });
+  });
+  gsap.set(highlight, { opacity: 0, fill: "#ffffff" });
+
+  return { main, detail, highlight, draw };
+}
+
+export const pad3 = (v) => String(Math.round(v)).padStart(3, "0");
+
+
+

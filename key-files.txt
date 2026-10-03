@@ -1,0 +1,724 @@
+]633;E;for f in src/store/useStore.js src/hooks/useLenis.js src/hooks/useScrollProgress.js   src/components/sections/Preloader.jsx src/components/sections/Hero.jsx   src/components/canvas/Scene.jsx src/components/sections/ModelShowcase.jsx   src/components/showcase/loadGLB.js\x3b do   echo -e "\\n--------- $f ---------"\x3b cat "$f"\x3b done > key-files.txt;692b7dd8-d469-4f46-b7e6-102bd2c72728]633;C
+--------- src/store/useStore.js ---------
+import { create } from "zustand";
+
+const useStore = create((set) => ({
+  isLoading: true,
+  setIsLoading: (value) => set({ isLoading: value }),
+
+  loadProgress: 0,
+  setLoadProgress: (value) => set({ loadProgress: value }),
+
+  carColor: "#ff0000",
+  setCarColor: (color) => set({ carColor: color }),
+}));
+
+export default useStore;
+
+--------- src/hooks/useLenis.js ---------
+import { useEffect, useRef } from "react";
+import Lenis from "lenis";
+import gsap from "gsap";
+import { ScrollTrigger } from "gsap/ScrollTrigger";
+
+gsap.registerPlugin(ScrollTrigger);
+
+export default function useLenis(isLoading) {
+  const lenisRef = useRef(null);
+
+  useEffect(() => {
+    const lenis = new Lenis({
+      duration: 1.2,
+      easing: (t) => Math.min(1, 1.001 - Math.pow(2, -10 * t)),
+      smoothWheel: true,
+    });
+
+    lenisRef.current = lenis;
+    lenis.stop(); // start paused, resume once loading finishes
+
+    lenis.on("scroll", ScrollTrigger.update);
+
+    const raf = (time) => lenis.raf(time * 1000);
+    gsap.ticker.add(raf);
+    gsap.ticker.lagSmoothing(0);
+
+    return () => {
+      lenis.destroy();
+      gsap.ticker.remove(raf);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!lenisRef.current) return;
+    if (isLoading) {
+      lenisRef.current.stop();
+    } else {
+      lenisRef.current.start();
+    }
+  }, [isLoading]);
+}
+
+--------- src/hooks/useScrollProgress.js ---------
+import { useEffect, useRef } from "react";
+
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+
+// Calls onProgress(p, rect) whenever the element moves.
+// p = 0 → 1 across the element's sticky travel (height − viewport).
+// Writes straight to the DOM from the callback, so there are no React re-renders.
+export default function useScrollProgress(ref, onProgress) {
+  const cb = useRef(onProgress);
+  cb.current = onProgress;
+
+  useEffect(() => {
+    let raf;
+    let lastTop = NaN;
+
+    const reset = () => (lastTop = NaN);
+    window.addEventListener("resize", reset);
+
+    const tick = () => {
+      const el = ref.current;
+      if (el) {
+        const r = el.getBoundingClientRect();
+        if (r.top !== lastTop) {
+          lastTop = r.top;
+          const total = r.height - window.innerHeight;
+          const p = total > 0 ? clamp01(-r.top / total) : 0;
+          cb.current(p, r);
+        }
+      }
+      raf = requestAnimationFrame(tick);
+    };
+    raf = requestAnimationFrame(tick);
+
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("resize", reset);
+    };
+  }, [ref]);
+}
+
+--------- src/components/sections/Preloader.jsx ---------
+import { useEffect, useRef, useState } from "react";
+import gsap from "gsap";
+import useStore from "../../store/useStore";
+import FerrariLogo from "../ui/FerrariLogo";
+
+const TOP_SPEED = 340; // km/h — real Ferrari top speed, authentic detail
+
+function Preloader() {
+  const wrapperRef = useRef(null);
+  const svgHolderRef = useRef(null);
+  const counterRef = useRef(null);
+  const [mounted, setMounted] = useState(true);
+  const setIsLoading = useStore((state) => state.setIsLoading);
+
+  useEffect(() => {
+    const svg = svgHolderRef.current;
+    const mainPaths = svg.querySelectorAll(".ferrari-main");
+    const detailPaths = svg.querySelectorAll(".ferrari-detail");
+    const highlightPaths = svg.querySelectorAll(".ferrari-highlight");
+    const drawPaths = [...mainPaths, ...detailPaths];
+
+    // Prep main + detail paths for stroke draw-in
+    drawPaths.forEach((path) => {
+      const length = path.getTotalLength();
+      gsap.set(path, {
+        strokeDasharray: length,
+        strokeDashoffset: length,
+        stroke: "#ff0000",
+        strokeWidth: 0.6,
+        fill: "rgba(255,0,0,0)",
+      });
+    });
+
+    // Highlights start invisible — they "shine in" after the fill
+    gsap.set(highlightPaths, { opacity: 0, fill: "#ffffff" });
+
+    const progress = { value: 0 };
+
+    const tl = gsap.timeline({
+      onComplete: () => {
+        setIsLoading(false);
+        setMounted(false);
+      },
+    });
+
+    // Draw outline, synced to km/h counter
+    tl.to(progress, {
+      value: TOP_SPEED,
+      duration: 2.8,
+      ease: "power2.inOut",
+      onUpdate: () => {
+        const pct = progress.value / TOP_SPEED;
+
+        drawPaths.forEach((path) => {
+          const length = path.getTotalLength();
+          gsap.set(path, {
+            strokeDashoffset: length - length * pct,
+          });
+        });
+
+        if (counterRef.current) {
+          counterRef.current.textContent = Math.floor(progress.value)
+            .toString()
+            .padStart(3, "0");
+        }
+      },
+    });
+
+    // Fill the main silhouette solid red
+    tl.to(mainPaths, {
+      fill: "rgba(255,0,0,1)",
+      duration: 0.4,
+      ease: "power2.out",
+    });
+
+    // Shine details fade in white, on top of the red fill
+    tl.to(
+      highlightPaths,
+      {
+        opacity: 1,
+        duration: 0.5,
+        ease: "power2.out",
+        stagger: 0.005,
+      },
+      "-=0.15"
+    );
+
+    // Flash effect
+    tl.to(wrapperRef.current, {
+      opacity: 0.15,
+      duration: 0.07,
+      yoyo: true,
+      repeat: 3,
+      ease: "power1.inOut",
+    });
+
+    // Explode / scale out to reveal Hero underneath
+    tl.to(wrapperRef.current, {
+      scale: 8,
+      opacity: 0,
+      filter: "blur(12px)",
+      duration: 0.8,
+      ease: "power4.in",
+    });
+
+    return () => tl.kill();
+  }, [setIsLoading]);
+
+  if (!mounted) return null;
+
+  return (
+    <div
+      ref={wrapperRef}
+      className="fixed inset-0 z-50 bg-black flex flex-col items-center justify-center gap-6"
+    >
+      <div ref={svgHolderRef}>
+        <FerrariLogo className="w-40 h-40 md:w-56 md:h-56" />
+      </div>
+
+      <div className="flex items-center gap-2 font-mono text-white text-sm tracking-[0.3em]">
+        <span ref={counterRef}>000</span>
+        <span className="text-red-500">km/h</span>
+      </div>
+    </div>
+  );
+}
+
+export default Preloader;
+
+--------- src/components/sections/Hero.jsx ---------
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import Scene from "../canvas/Scene";
+import CarModel from "../canvas/CarModel";
+import GroundPlane from "../canvas/GroundPlane";
+import HeroText from "../canvas/HeroText";
+import HeroOverlay from "../HeroOverlay";
+import HeroTelemetry from "../HeroTelemetry";
+import ErrorBoundary from "../ui/ErrorBoundary";
+import { CARS, CAR_MODEL } from "../../data/cars";
+import "../hero.css";
+
+function Hero() {
+  const [index, setIndex] = useState(0);
+  const [active, setActive] = useState(true);
+  const rootRef = useRef(null);
+
+  const select = useCallback(
+    (i) => setIndex((i + CARS.length) % CARS.length),
+    [],
+  );
+
+  // render the 3D scene only while the hero is (nearly) on screen
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setActive(entry.isIntersecting),
+      { rootMargin: "200px 0px 200px 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.key === "ArrowRight") select(index + 1);
+      if (e.key === "ArrowLeft") select(index - 1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [index, select]);
+
+  const car = CARS[index];
+  const theme = {
+    "--c1": car.theme[0],
+    "--c2": car.theme[1],
+    "--c3": car.theme[2],
+  };
+
+  return (
+    <div className="hero-root" id="top" ref={rootRef}>
+      <section className="hero-stage" style={theme}>
+        <div className="hero-canvas">
+          <ErrorBoundary>
+            <Suspense fallback={null}>
+              <Scene active={active}>
+                <CarModel url={CAR_MODEL} paint={car.paint} />
+                <GroundPlane position={[-0.171, 0.079, 1.775]} />
+                <HeroText position={[-8, 0.082, 2.6]} />
+              </Scene>
+            </Suspense>
+          </ErrorBoundary>
+        </div>
+
+        <HeroOverlay
+          car={car}
+          index={index}
+          total={CARS.length}
+          pending={false}
+          onSelect={select}
+        />
+        <HeroTelemetry car={car} />
+      </section>
+    </div>
+  );
+}
+
+export default Hero;
+
+--------- src/components/canvas/Scene.jsx ---------
+import { Canvas } from "@react-three/fiber";
+import {
+  OrbitControls,
+  Environment,
+  Lightformer,
+  ContactShadows,
+  SoftShadows,
+} from "@react-three/drei";
+import * as THREE from "three";
+
+const CAR_TARGET = new THREE.Vector3(-1.921, 1.44, 3.727);
+const CAM_POSITION = [-23.545, 35.709, -0.932];
+
+function Scene({ children, debug = false, headlightsOn, active = true }) {
+  return (
+    <Canvas
+      frameloop={active ? "always" : "never"}
+      shadows="soft"
+      camera={{ position: CAM_POSITION, fov: 23 }}
+      gl={{
+        antialias: true,
+        alpha: true,
+        toneMapping: THREE.ACESFilmicToneMapping,
+        powerPreference: "high-performance",
+      }}
+      dpr={[1, 1.5]}
+      onCreated={({ camera, gl }) => {
+        camera.lookAt(CAR_TARGET);
+        gl.setClearColor(0x000000, 0);
+      }}
+    >
+      {/* soft, diffused shadow edge. If you ever see artifacts, delete this one line. */}
+      <SoftShadows size={18} samples={12} focus={0.4} />
+
+      <ambientLight intensity={0.4} />
+
+      <directionalLight
+        position={[6, 14, 5]}
+        intensity={1.4}
+        castShadow
+        shadow-mapSize-width={2048}
+        shadow-mapSize-height={2048}
+        shadow-camera-near={1}
+        shadow-camera-far={40}
+        shadow-camera-left={-14}
+        shadow-camera-right={14}
+        shadow-camera-top={14}
+        shadow-camera-bottom={-14}
+        shadow-bias={-0.0004}
+        shadow-normalBias={0.05}
+      />
+
+      {headlightsOn && (
+        <>
+          <spotLight
+            position={[-2.6, 1.7, 5.4]}
+            target-position={[-2.6, 0.2, 12]}
+            intensity={12}
+            angle={Math.PI / 4}
+            penumbra={0.6}
+            color="#fff6e0"
+          />
+          <spotLight
+            position={[-1.2, 1.7, 5.4]}
+            target-position={[-1.2, 0.2, 12]}
+            intensity={12}
+            angle={Math.PI / 4}
+            penumbra={0.6}
+            color="#fff6e0"
+          />
+        </>
+      )}
+
+      <ContactShadows
+        position={[-1.921, 0.085, 3.727]}
+        opacity={0.35}
+        scale={22}
+        blur={3}
+        far={5}
+        color="#5a3d00"
+      />
+
+      <Environment resolution={256}>
+        <Lightformer intensity={2} position={[0, 10, -5]} scale={[20, 20, 1]} />
+        <Lightformer
+          intensity={1.5}
+          position={[-10, 5, 5]}
+          scale={[15, 8, 1]}
+        />
+        <Lightformer intensity={1.5} position={[10, 5, 5]} scale={[15, 8, 1]} />
+      </Environment>
+
+      {children}
+      {debug && <OrbitControls target={CAR_TARGET} makeDefault />}
+    </Canvas>
+  );
+}
+
+export default Scene;
+--------- src/components/sections/ModelShowcase.jsx ---------
+import { Suspense, useCallback, useEffect, useRef, useState } from "react";
+import { Canvas } from "@react-three/fiber";
+import { Environment, Lightformer } from "@react-three/drei";
+import * as THREE from "three";
+import ErrorBoundary from "../ui/ErrorBoundary";
+import ShowStage from "../showcase/ShowStage";
+import { loadGLB } from "../showcase/loadGLB";
+import { lift } from "../showcase/colors";
+import { SHOW_CARS, SHOW_BASE, PODIUM_URL } from "../../data/showcase";
+import "./showcase.css";
+
+const pad = (n) => String(n).padStart(2, "0");
+
+export default function ModelShowcase() {
+  const N = SHOW_CARS.length;
+  const [index, setIndex] = useState(0);
+  const [sel, setSel] = useState(() => SHOW_CARS.map(() => 0));
+  const [mounted, setMounted] = useState(false);
+  const [active, setActive] = useState(false);
+  const [entered, setEntered] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const rootRef = useRef(null);
+  const inView = useRef(false);
+
+  // 1) start downloading the podium + first car as soon as the page is idle
+  useEffect(() => {
+    const warm = () => {
+      loadGLB(PODIUM_URL).catch(() => {});
+      loadGLB(SHOW_BASE + SHOW_CARS[0].file).catch(() => {});
+    };
+    const go = () =>
+      "requestIdleCallback" in window
+        ? window.requestIdleCallback(warm, { timeout: 3000 })
+        : setTimeout(warm, 1500);
+    if (document.readyState === "complete") go();
+    else window.addEventListener("load", go, { once: true });
+    return () => window.removeEventListener("load", go);
+  }, []);
+
+  // 2) mount the canvas ~1.5 screens early, pause it when far away,
+  //    and fire the short entrance once ~35% of the section is on screen
+  useEffect(() => {
+    const el = rootRef.current;
+    if (!el) return;
+
+    const near = new IntersectionObserver(
+      ([e]) => {
+        setActive(e.isIntersecting);
+        if (e.isIntersecting) setMounted(true);
+      },
+      { rootMargin: "150% 0px 150% 0px" },
+    );
+    const enter = new IntersectionObserver(
+      ([e]) => {
+        if (e.isIntersecting) {
+          setEntered(true);
+          enter.disconnect();
+        }
+      },
+      { rootMargin: "0px 0px -35% 0px" },
+    );
+    const vis = new IntersectionObserver(
+      ([e]) => {
+        inView.current = e.isIntersecting;
+      },
+      { threshold: 0.5 },
+    );
+    near.observe(el);
+    enter.observe(el);
+    vis.observe(el);
+    return () => {
+      near.disconnect();
+      enter.disconnect();
+      vis.disconnect();
+    };
+  }, []);
+
+  const step = useCallback((d) => setIndex((i) => (i + d + N) % N), [N]);
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (!inView.current) return;
+      if (e.key === "ArrowRight") step(1);
+      if (e.key === "ArrowLeft") step(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [step]);
+
+  const car = SHOW_CARS[index];
+  const color = car.colors[sel[index]];
+  const hexes = SHOW_CARS.map((c, i) => c.colors[sel[i]].hex);
+
+  return (
+    <section
+      className={`show${entered ? " is-in" : ""}`}
+      id="models"
+      ref={rootRef}
+      data-nav="light"
+      style={{ "--glow": lift(color.hex) }}
+    >
+      <div className="show-bg" />
+
+      <div className="show-ghost" key={`ghost-${car.id}`} aria-hidden="true">
+        {[...car.name].map((ch, i) => (
+          <span key={i} style={{ "--i": i }}>
+            {ch === " " ? "\u00A0" : ch}
+          </span>
+        ))}
+      </div>
+
+      <div className="show-canvas">
+        {mounted && (
+          <ErrorBoundary>
+            <Canvas
+              frameloop={active ? "always" : "never"}
+              dpr={[1, 1.75]}
+              camera={{ fov: 28, position: [6.3, 3.1, 10.9], near: 0.1, far: 80 }}
+              gl={{
+                antialias: true,
+                alpha: true,
+                powerPreference: "high-performance",
+                toneMapping: THREE.ACESFilmicToneMapping,
+              }}
+              onCreated={({ gl }) => {
+                gl.localClippingEnabled = true;
+                gl.setClearColor(0x000000, 0);
+              }}
+            >
+              <Suspense fallback={null}>
+                <ambientLight intensity={0.12} />
+                <spotLight
+                  position={[0, 9, 2]}
+                  angle={0.55}
+                  penumbra={1}
+                  intensity={70}
+                  color="#fff3dc"
+                />
+                <Environment resolution={256}>
+                  <Lightformer intensity={1.6} position={[0, 8, 0]} rotation-x={Math.PI / 2} scale={[14, 14, 1]} />
+                  <Lightformer intensity={3} position={[-8, 2, 0]} rotation-y={Math.PI / 2} scale={[10, 1.4, 1]} color="#ffe9c4" />
+                  <Lightformer intensity={3} position={[8, 2, 0]} rotation-y={-Math.PI / 2} scale={[10, 1.4, 1]} color="#ffb0a0" />
+                  <Lightformer intensity={1.6} position={[0, 3, -8]} scale={[14, 2, 1]} />
+                  <Lightformer intensity={0.8} position={[0, 2, 9]} rotation-y={Math.PI} scale={[10, 2, 1]} />
+                </Environment>
+
+                <ShowStage
+                  cars={SHOW_CARS}
+                  target={index}
+                  hexes={hexes}
+                  entered={entered}
+                  onLoading={setLoading}
+                  onRevert={setIndex}
+                />
+              </Suspense>
+            </Canvas>
+          </ErrorBoundary>
+        )}
+      </div>
+
+      <div className="show-ui">
+        <div className="show-sweep" />
+
+        <span className="show-eyebrow rv" style={{ "--d": "0.1s" }}>
+          ( 03 ) — The Collection
+        </span>
+
+        <div className="show-count rv" style={{ "--d": "0.2s", "--p": (index + 1) / N }}>
+          <span>
+            {pad(index + 1)} / {pad(N)}
+          </span>
+          <i />
+          {loading && <em className="show-loading">Loading</em>}
+        </div>
+
+        <div className="show-copy" key={`copy-${car.id}`}>
+          <p className="show-kicker rv" style={{ "--d": "0.35s" }}>
+            {car.kicker}
+          </p>
+          <h2 className="show-name">
+            {[...car.name].map((ch, i) => (
+              <span key={i} style={{ "--i": i }}>
+                {ch === " " ? "\u00A0" : ch}
+              </span>
+            ))}
+          </h2>
+          <p className="show-tag rv" style={{ "--d": "0.6s" }}>
+            {car.tagline.map((l, i) => (
+              <span key={i}>
+                {l}
+                <br />
+              </span>
+            ))}
+          </p>
+          <p className="show-desc rv" style={{ "--d": "0.7s" }}>
+            {car.desc}
+          </p>
+          <a
+            className="show-cta rv"
+            style={{ "--d": "0.8s" }}
+            href="#specs"
+            onClick={(e) => {
+              e.preventDefault();
+              document.getElementById("specs")?.scrollIntoView({ behavior: "smooth" });
+            }}
+          >
+            <span>Discover model</span>
+            <span>↗</span>
+          </a>
+        </div>
+
+        <ul className="show-index">
+          {SHOW_CARS.map((c, i) => (
+            <li key={c.id} className="rv" style={{ "--d": `${0.5 + i * 0.07}s` }}>
+              <button
+                className={i === index ? "is-on" : ""}
+                onClick={() => setIndex(i)}
+                aria-label={`Show ${c.name}`}
+              >
+                <em>{pad(i + 1)}</em>
+                <span>{c.name}</span>
+                <i />
+              </button>
+            </li>
+          ))}
+        </ul>
+
+        <div className="show-paint rv" style={{ "--d": "0.9s" }}>
+          <div className="show-paint-label">
+            <span>Paint</span>
+            <b key={color.name}>{color.name}</b>
+          </div>
+          <div className="show-swatches">
+            {car.colors.map((c, k) => (
+              <button
+                key={c.hex}
+                className={`show-swatch${k === sel[index] ? " is-on" : ""}`}
+                style={{ "--sw": c.hex }}
+                aria-label={c.name}
+                title={c.name}
+                onClick={() => setSel((s) => s.map((v, i) => (i === index ? k : v)))}
+              />
+            ))}
+          </div>
+        </div>
+
+        <p className="show-hint rv" style={{ "--d": "1.3s" }}>
+          Drag to rotate
+        </p>
+
+        <div className="show-nav rv" style={{ "--d": "1s" }}>
+          <button className="show-arrow is-prev" onClick={() => step(-1)} aria-label="Previous car">
+            <span className="show-circle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M20 12H4M10 6l-6 6 6 6" />
+              </svg>
+            </span>
+            <span className="show-txt">Previous</span>
+          </button>
+
+          <div className="show-specs" key={`specs-${car.id}`}>
+            {car.specs.map((s, i) => (
+              <div className="show-spec" style={{ "--d": `${0.3 + i * 0.07}s` }} key={s.label}>
+                <div className="show-spec-val">{s.val}</div>
+                <div className="show-spec-label">{s.label}</div>
+              </div>
+            ))}
+          </div>
+
+          <button className="show-arrow is-next" onClick={() => step(1)} aria-label="Next car">
+            <span className="show-txt">Next</span>
+            <span className="show-circle">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
+                <path d="M4 12h16M14 6l6 6-6 6" />
+              </svg>
+            </span>
+          </button>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+--------- src/components/showcase/loadGLB.js ---------
+import { GLTFLoader } from "three/examples/jsm/loaders/GLTFLoader.js";
+import { DRACOLoader } from "three/examples/jsm/loaders/DRACOLoader.js";
+
+let loader = null;
+function getLoader() {
+  if (!loader) {
+    loader = new GLTFLoader();
+    const draco = new DRACOLoader();
+    draco.setDecoderPath("/draco/"); // served from public/draco, no CDN
+    draco.preload();
+    loader.setDRACOLoader(draco);
+  }
+  return loader;
+}
+
+const cache = new Map();
+
+// One download per URL, cached for the session.
+export function loadGLB(url) {
+  if (!cache.has(url)) {
+    const p = new Promise((resolve, reject) => {
+      getLoader().load(url, resolve, undefined, reject);
+    });
+    p.catch(() => cache.delete(url));
+    cache.set(url, p);
+  }
+  return cache.get(url);
+}

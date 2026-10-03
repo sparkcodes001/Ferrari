@@ -1,0 +1,33 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* hide scrollbar, scrolling still works */
+html,
+body {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+  width: 0;
+  height: 0;
+}
+
+:root {
+  --nero: #0a0908;
+  --giallo: #ffcd00;
+  --rosso: #da291c;
+  --verde: #009246;
+  --bianco: #efeae0;
+}
+
+@font-face {
+  font-family: "Syncopate";
+  src: url("/fonts/Syncopate-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-display: swap;
+}
+

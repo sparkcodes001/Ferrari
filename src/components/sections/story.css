@@ -1,0 +1,199 @@
+/* shared by Intro + Film */
+.story {
+  --ink: #0a0908;
+  --paper: #efeae0;
+  --yellow: #f7d64e;
+  position: relative;
+  background: var(--ink);
+  color: var(--paper);
+  font-family: "Syncopate", "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+
+.story, .show { --ink: var(--nero); --paper: var(--bianco); --yellow: var(--giallo); }
+
+.story-label {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(8px, 0.68vw, 13px);
+  letter-spacing: 0.22em;
+  color: rgba(239, 234, 224, 0.6);
+}
+
+/* ───────── INTRO ───────── */
+.intro {
+  height: 280vh;
+  margin-top: -30vh; /* slides over the end of the pinned hero */
+  z-index: 20;
+}
+.intro-curve {
+  position: absolute;
+  left: -10vw;
+  right: -10vw;
+  bottom: calc(100% - 3px); /* overlaps the section by 3px: no seam */
+  height: calc(24vh + 3px);
+  background: var(--ink);
+  border-radius: 50% 50% 0 0 / 100% 100% 0 0;
+  transform-origin: bottom;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+.intro-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 0 4vw;
+}
+.intro-top {
+  position: absolute;
+  top: 12vh;
+  left: 4vw;
+  right: 4vw;
+  display: flex;
+  justify-content: space-between;
+}
+.intro-text {
+  margin: 0;
+  max-width: 82vw;
+  font-weight: 700;
+  font-size: clamp(26px, 5vw, 98px);
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+}
+.intro-word {
+  display: inline-block;
+  margin-right: 0.28em;
+  opacity: 0.14;
+  will-change: opacity, transform;
+}
+.intro-word.is-accent {
+  color: var(--yellow);
+}
+.intro-rail {
+  position: absolute;
+  right: 4vw;
+  top: 50%;
+  height: 22vh;
+  width: 1px;
+  margin-top: -11vh;
+  background: rgba(239, 234, 224, 0.2);
+}
+.intro-rail i {
+  position: absolute;
+  inset: 0;
+  background: var(--yellow);
+  transform-origin: top;
+  transform: scaleY(0);
+}
+.intro-bottom {
+  position: absolute;
+  bottom: 8vh;
+  left: 4vw;
+  right: 4vw;
+  display: flex;
+  justify-content: space-between;
+}
+
+/* ───────── FILM ───────── */
+.film {
+  height: 340vh;
+}
+.film-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+}
+.film-window {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  transform: scale(0.3) translateZ(0);
+  transform-origin: center;
+  will-change: transform;
+  backface-visibility: hidden;
+}
+.film-video,
+.film-fallback {
+  position: absolute;
+  inset: 0;
+  background: #14110f;
+  display: grid;
+  place-items: center;
+}
+.film-fallback {
+  background:
+    radial-gradient(ellipse 70% 60% at 30% 70%, rgba(247, 214, 78, 0.55), transparent 70%),
+    radial-gradient(ellipse 60% 50% at 75% 30%, rgba(209, 18, 27, 0.35), transparent 70%),
+    #14110f;
+  background-size: 140% 140%;
+  animation: film-drift 9s ease-in-out infinite alternate;
+  display: grid;
+  place-items: center;
+}
+.film-fallback span {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(9px, 0.8vw, 14px);
+  letter-spacing: 0.2em;
+  color: rgba(239, 234, 224, 0.55);
+  text-align: center;
+  padding: 0 4vw;
+}
+@keyframes film-drift {
+  from { background-position: 0% 0%; }
+  to { background-position: 100% 100%; }
+}
+.film-shade {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to top,
+    rgba(10, 9, 8, 0.75) 0%,
+    rgba(10, 9, 8, 0) 45%
+  );
+  opacity: 0;
+  will-change: opacity;
+}
+
+.film-meta {
+  position: absolute;
+  left: 4vw;
+  right: 4vw;
+  bottom: 8vh;
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  pointer-events: none;
+}
+.film-meta-left {
+  display: flex;
+  flex-direction: column;
+  gap: 1vh;
+  will-change: opacity;
+}
+.film-time {
+  color: var(--paper);
+  font-variant-numeric: tabular-nums;
+}
+
+.film-caps {
+  position: absolute;
+  left: 4vw;
+  bottom: 16vh;
+  width: 60vw;
+  pointer-events: none;
+}
+.film-cap {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(24px, 4.2vw, 80px);
+  line-height: 1.05;
+  opacity: 0;
+  visibility: hidden;
+  will-change: opacity, transform;
+}

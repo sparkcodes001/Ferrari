@@ -1,0 +1,558 @@
+@import url("https://fonts.googleapis.com/css2?family=Syncopate:wght@400&family=Space+Mono&display=swap");
+
+/* same font file the 3D text uses, so the DOM and WebGL type match exactly */
+@font-face {
+  font-family: "Syncopate";
+  src: url("/fonts/Syncopate-Bold.ttf") format("truetype");
+  font-weight: 700;
+  font-style: normal;
+  font-display: swap;
+}
+
+.hero-root {
+  position: relative;
+  height: 280vh; /* was 250vh */
+}
+.hero-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  width: 100%;
+  overflow: hidden;
+  background:
+    linear-gradient(
+      115deg,
+      rgba(255, 240, 170, 0.34) 0%,
+      rgba(255, 240, 170, 0) 26%,
+      rgba(0, 0, 0, 0.08) 44%,
+      rgba(255, 255, 255, 0.2) 62%,
+      rgba(255, 255, 255, 0) 82%
+    ),
+    radial-gradient(
+      ellipse 95% 85% at 55% 35%,
+      var(--c1) 0%,
+      var(--c2) 45%,
+      var(--c3) 100%
+    );
+  transition: --c1 1.8s cubic-bezier(0.65, 0, 0.35, 1), --c2 1.8s cubic-bezier(0.65, 0, 0.35, 1), --c3 1.8s cubic-bezier(0.65, 0, 0.35, 1);
+}
+
+.hero-canvas {
+  position: absolute;
+  inset: 0;
+}
+
+/* ───────── NAV (fixed) ───────── */
+.ho-nav {
+  position: fixed;
+  top: 3.4vh;
+  left: 4vw;
+  right: 3.7vw;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  pointer-events: none;
+  color: #141414;
+  font-family: "Syncopate", "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+.ho-nav a,
+.ho-nav button {
+  pointer-events: auto;
+  color: inherit;
+  text-decoration: none;
+  font-family: inherit;
+  text-transform: inherit;
+}
+.ho-brand {
+  display: flex;
+  align-items: center;
+  gap: 1.3vw;
+}
+.ho-logo {
+  font-weight: 700;
+  font-size: clamp(18px, 1.9vw, 34px);
+  letter-spacing: 0.02em;
+}
+.ho-divider {
+  width: 1px;
+  height: clamp(26px, 2.6vw, 44px);
+  background: rgba(20, 20, 20, 0.6);
+}
+.ho-meta {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(8px, 0.62vw, 12px);
+  letter-spacing: 0.16em;
+  line-height: 1.6;
+  color: rgba(20, 20, 20, 0.65);
+}
+.ho-right {
+  display: flex;
+  align-items: center;
+  gap: 3.3vw;
+}
+.ho-links {
+  display: flex;
+  gap: 3.3vw;
+  font-size: clamp(9px, 0.72vw, 13px);
+  letter-spacing: 0.12em;
+}
+.ho-links a {
+  transition: opacity 0.25s;
+}
+.ho-links a:hover {
+  opacity: 0.55;
+}
+.ho-burger {
+  width: clamp(38px, 2.7vw, 50px);
+  height: clamp(38px, 2.7vw, 50px);
+  border-radius: 50%;
+  border: 1.5px solid #141414;
+  background: transparent;
+  display: grid;
+  place-content: center;
+  gap: 5px;
+  cursor: pointer;
+  transition: background 0.25s;
+}
+.ho-burger:hover {
+  background: rgba(20, 20, 20, 0.08);
+}
+.ho-burger span {
+  display: block;
+  width: 16px;
+  height: 1.5px;
+  background: #141414;
+}
+
+/* ───────── HERO OVERLAY ───────── */
+.ho {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  color: #141414;
+  font-family: "Syncopate", "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+.ho a {
+  pointer-events: auto;
+  color: inherit;
+  text-decoration: none;
+}
+.ho-fade {
+  position: absolute;
+  inset: 0;
+  will-change: opacity, transform;
+}
+
+.ho-copy {
+  position: absolute;
+  left: 4vw;
+  top: 22%;
+}
+.ho-eyebrow {
+  font-weight: 400;
+  font-size: clamp(13px, 1.35vw, 26px);
+  letter-spacing: 0.3em;
+  margin: 0 0 0.6vh;
+}
+.ho-title {
+  font-weight: 700;
+  font-size: clamp(26px, 3.1vw, 62px);
+  line-height: 1.05;
+  margin: 0 0 2.4vh;
+}
+.ho-sub {
+  font-family: "Space Mono", monospace;
+  text-transform: none;
+  font-size: clamp(11px, 0.95vw, 17px);
+  letter-spacing: 0.1em;
+  line-height: 1.7;
+  margin: 0 0 3vh;
+  color: rgba(20, 20, 20, 0.85);
+}
+.ho-cta {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.9vw;
+  font-size: clamp(9px, 0.78vw, 14px);
+  letter-spacing: 0.2em;
+  transition: opacity 0.25s;
+}
+.ho-cta span:first-child {
+  border-bottom: 1px solid #141414;
+  padding-bottom: 0.9vh;
+}
+.ho-cta:hover {
+  opacity: 0.6;
+}
+
+.ho-specs {
+  position: absolute;
+  right: 7.2vw;
+  top: 19.5%;
+  width: 9.4vw;
+  border-left: 1px solid rgba(20, 20, 20, 0.55);
+  padding-left: 1.2vw;
+}
+.ho-spec + .ho-spec {
+  border-top: 1px solid rgba(20, 20, 20, 0.35);
+  margin-top: 2vh;
+  padding-top: 2vh;
+}
+.ho-spec-val {
+  font-weight: 700;
+  font-size: clamp(11px, 1.05vw, 19px);
+  letter-spacing: 0.06em;
+  margin-bottom: 0.8vh;
+}
+.ho-spec-sub {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(8px, 0.62vw, 12px);
+  letter-spacing: 0.16em;
+  line-height: 1.9;
+  color: rgba(20, 20, 20, 0.7);
+}
+
+.ho-dots {
+  position: absolute;
+  right: 4.2vw;
+  top: 43.5%;
+  display: flex;
+  flex-direction: column;
+  gap: 1.5vh;
+}
+.ho-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  border: 1px solid rgba(20, 20, 20, 0.7);
+}
+.ho-dot.is-active {
+  background: #141414;
+  border-color: #141414;
+}
+
+.ho-count {
+  position: absolute;
+  right: 7.2vw;
+  top: 60%;
+  width: 9.6vw;
+  font-size: clamp(10px, 0.85vw, 15px);
+  letter-spacing: 0.12em;
+}
+.ho-count small {
+  display: block;
+  font-family: "Space Mono", monospace;
+  font-size: clamp(8px, 0.62vw, 12px);
+  letter-spacing: 0.16em;
+  color: rgba(20, 20, 20, 0.7);
+  margin: 1vh 0 1.4vh;
+}
+.ho-count i {
+  display: block;
+  height: 1px;
+  background: #141414;
+}
+
+.ho-scroll {
+  position: absolute;
+  left: 4.4vw;
+  bottom: 31.5%;
+  display: flex;
+  align-items: flex-end;
+  gap: 0.8vw;
+}
+.ho-scroll-line {
+  position: relative;
+  width: 1px;
+  height: 7.5vh;
+  background: #141414;
+}
+.ho-scroll-line::after {
+  content: "";
+  position: absolute;
+  left: -4px;
+  bottom: 0;
+  width: 8px;
+  height: 8px;
+  border-right: 1px solid #141414;
+  border-bottom: 1px solid #141414;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+.ho-scroll-label {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(8px, 0.62vw, 12px);
+  letter-spacing: 0.18em;
+}
+
+/* lets the gradient colors animate between cars */
+@property --c1 { syntax: "<color>"; inherits: true; initial-value: #f7d64e; }
+@property --c2 { syntax: "<color>"; inherits: true; initial-value: #efca38; }
+@property --c3 { syntax: "<color>"; inherits: true; initial-value: #dcb022; }
+
+.ho button {
+  pointer-events: auto;
+  font-family: inherit;
+  color: inherit;
+}
+
+@keyframes ho-in {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: none; }
+}
+.ho-anim { animation: ho-in 0.8s cubic-bezier(0.16, 1, 0.3, 1) both; }
+
+/* dots are real buttons now */
+.ho-dot {
+  position: relative;
+  padding: 0;
+  background: transparent;
+  cursor: pointer;
+  transition: background 0.3s, transform 0.3s;
+}
+.ho-dot::after { content: ""; position: absolute; inset: -8px; }
+.ho-dot:hover { transform: scale(1.35); }
+
+/* counter progress bar */
+.ho-count i { position: relative; background: rgba(20, 20, 20, 0.22); }
+.ho-count i::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: #141414;
+  transform-origin: left;
+  transform: scaleX(var(--p, 0.25));
+  transition: transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ho-count.is-pending i::after { animation: ho-pulse 0.9s ease-in-out infinite; }
+@keyframes ho-pulse { 50% { opacity: 0.35; } }
+
+/* nav: logo block is a link now */
+.ho-brand { color: inherit; text-decoration: none; pointer-events: auto; }
+.ho-meta { display: flex; flex-direction: column; }
+.ho-nav.is-open { color: #efeae0; }
+.ho-nav.is-open .ho-divider { background: rgba(239, 234, 224, 0.5); }
+.ho-nav.is-open .ho-meta { color: rgba(239, 234, 224, 0.6); }
+
+/* burger → X */
+.ho-burger { position: relative; transition: background 0.25s, border-color 0.25s; }
+.ho-burger span {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  margin-left: -8px;
+  transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), background 0.25s;
+}
+.ho-burger span:nth-child(1) { transform: translateY(-3px); }
+.ho-burger span:nth-child(2) { transform: translateY(3px); }
+.ho-burger.is-open { border-color: #efeae0; }
+.ho-burger.is-open span { background: #efeae0; }
+.ho-burger.is-open span:nth-child(1) { transform: rotate(45deg); }
+.ho-burger.is-open span:nth-child(2) { transform: rotate(-45deg); }
+
+/* full-screen menu */
+.ho-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: #141414;
+  color: #efeae0;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 0 8vw;
+  clip-path: inset(0 0 100% 0);
+  transition: clip-path 0.7s cubic-bezier(0.76, 0, 0.24, 1);
+  font-family: "Syncopate", "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  pointer-events: none;
+}
+.ho-menu.is-open { clip-path: inset(0 0 0 0); pointer-events: auto; }
+.ho-menu ul { list-style: none; margin: 0; padding: 0; }
+.ho-menu li {
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(30px);
+  transition: opacity 0.6s ease, transform 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ho-menu.is-open li {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(0.25s + var(--i) * 0.07s);
+}
+.ho-menu li a {
+  display: flex;
+  align-items: baseline;
+  gap: 2vw;
+  padding: 1.2vh 0;
+  font-weight: 700;
+  font-size: clamp(32px, 6.4vw, 110px);
+  line-height: 1;
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.3s, padding-left 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+}
+.ho-menu li a em {
+  font-family: "Space Mono", monospace;
+  font-style: normal;
+  font-weight: 400;
+  font-size: clamp(10px, 0.9vw, 16px);
+  letter-spacing: 0.2em;
+  opacity: 0.5;
+}
+.ho-menu li a:hover { color: #f7d64e; padding-left: 1.5vw; }
+.ho-menu-foot {
+  position: absolute;
+  left: 8vw;
+  bottom: 5vh;
+  margin: 0;
+  font-family: "Space Mono", monospace;
+  font-size: clamp(9px, 0.7vw, 13px);
+  letter-spacing: 0.2em;
+  opacity: 0.5;
+}
+/* ───────── TELEMETRY (scroll phase 2) ───────── */
+.ht {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  pointer-events: none;
+  color: #141414;
+  font-family: "Syncopate", "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  opacity: 0;
+  visibility: hidden;
+  will-change: opacity;
+}
+.ht-label {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(8px, 0.62vw, 12px);
+  letter-spacing: 0.2em;
+  color: rgba(20, 20, 20, 0.7);
+}
+
+/* chapters sit where the hero headline was */
+.ht-chapters {
+  position: absolute;
+  left: 4vw;
+  top: 22%;
+  width: 32vw;
+}
+.ht-chap {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  opacity: 0;
+  visibility: hidden;
+  will-change: opacity, transform;
+}
+.ht-chap-no {
+  display: flex;
+  align-items: center;
+  gap: 0.8vw;
+  margin: 0 0 1.4vh;
+  font-size: clamp(10px, 0.85vw, 15px);
+  letter-spacing: 0.3em;
+}
+.ht-chap-no span {
+  display: inline-block;
+  width: 2.6vw;
+  height: 1px;
+  background: #141414;
+}
+.ht-chap-title {
+  margin: 0 0 2vh;
+  font-weight: 700;
+  font-size: clamp(26px, 3.1vw, 62px);
+  line-height: 1.05;
+}
+.ht-chap-text {
+  margin: 0;
+  max-width: 24vw;
+  font-family: "Space Mono", monospace;
+  text-transform: none;
+  font-size: clamp(11px, 0.95vw, 17px);
+  letter-spacing: 0.08em;
+  line-height: 1.7;
+  color: rgba(20, 20, 20, 0.85);
+}
+
+/* speedometer */
+.ht-speed {
+  position: absolute;
+  left: 4vw;
+  bottom: 33%;
+  display: flex;
+  flex-direction: column;
+  gap: 1vh;
+}
+.ht-speed-row {
+  display: flex;
+  align-items: baseline;
+  gap: 1vw;
+}
+.ht-speed-num {
+  font-weight: 700;
+  font-size: clamp(44px, 6vw, 120px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.ht-speed small {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(10px, 0.85vw, 15px);
+  letter-spacing: 0.2em;
+}
+
+/* gear + rpm */
+.ht-gear {
+  position: absolute;
+  right: 7.2vw;
+  top: 22%;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 1.2vh;
+  padding-left: 1.2vw;
+  border-left: 1px solid rgba(20, 20, 20, 0.55);
+}
+.ht-gear b {
+  font-weight: 700;
+  font-size: clamp(32px, 3.6vw, 70px);
+  line-height: 1;
+}
+.ht-rpm {
+  width: 4px;
+  height: 18vh;
+  background: rgba(20, 20, 20, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+.ht-rpm i {
+  position: absolute;
+  inset: 0;
+  background: #141414;
+  transform-origin: bottom;
+  transform: scaleY(0.08);
+}
+
+/* navbar over dark sections */
+.ho-nav { transition: color 0.4s ease; }
+.ho-nav.is-light { color: #efeae0; }
+.ho-nav.is-light .ho-divider { background: rgba(239, 234, 224, 0.5); }
+.ho-nav.is-light .ho-meta { color: rgba(239, 234, 224, 0.6); }
+.ho-nav.is-light .ho-burger { border-color: #efeae0; }
+.ho-nav.is-light .ho-burger span { background: #efeae0; }
+.ho-nav.is-light .ho-burger:hover { background: rgba(239, 234, 224, 0.1); }
+.ho-nav {
+  transition: color 0.4s ease, opacity 0.4s ease, transform 0.4s ease;
+}
+.ho-nav.is-hidden {
+  opacity: 0;
+  transform: translateY(-10px);
+  pointer-events: none;
+}

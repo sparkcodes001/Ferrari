@@ -1,0 +1,1740 @@
+]633;E;for f in src/components/canvas/CarModel.jsx src/components/canvas/carTrack.js   src/components/canvas/HeroText.jsx src/components/showcase/ShowStage.jsx   src/components/showcase/prepareCar.js src/data/cars.js src/data/showcase.js   src/components/sections/Intro.jsx src/components/sections/Cinematic.jsx\x3b do   echo -e "\\n--------- $f ---------"\x3b cat "$f"\x3b done > key-files-2.txt;692b7dd8-d469-4f46-b7e6-102bd2c72728]633;C
+--------- src/components/canvas/CarModel.jsx ---------
+// canvas/CarModel.jsx
+import { useGLTF } from "@react-three/drei";
+import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
+import { useFrame } from "@react-three/fiber";
+import * as THREE from "three";
+import { carTrack } from "./carTrack";
+
+/* ───────────── Hover explode offsets ───────────── */
+const EXPLODE_MAP = [
+  { name: "Tire.001_22", offset: [-0.7, 0.05, -0.35] },
+  { name: "Tire.002_26", offset: [-0.7, 0.05, 0.35] },
+  { name: "Tire.003_30", offset: [0.7, 0.05, -0.35] },
+  { name: "Tire.004_34", offset: [0.7, 0.05, 0.35] },
+
+  { name: "Rims_21", offset: [-0.35, 0, 0] },
+  { name: "Rims.002_25", offset: [-0.35, 0, 0] },
+  { name: "Rims.001_29", offset: [0.35, 0, 0] },
+  { name: "Rims.003_33", offset: [0.35, 0, 0] },
+
+  { name: "Brake_19", offset: [0.2, 0, 0] },
+  { name: "Brake.001_23", offset: [0.2, 0, 0] },
+  { name: "Brake.002_27", offset: [-0.2, 0, 0] },
+  { name: "Brake.003_31", offset: [-0.2, 0, 0] },
+
+  { name: "Headlights_17", offset: [0, 0.15, -0.7] },
+  { name: "Mirror_16", offset: [0, 0.55, 0] },
+  { name: "GlassMain_14", offset: [0, 0.9, 0] },
+  { name: "GlassBack_18", offset: [0, 0.7, 0.35] },
+  { name: "GlassOther_3", offset: [0, 0.5, 0] },
+  { name: "RearLight_7", offset: [0, 0.12, 0.55] },
+  { name: "RedGlass_15", offset: [0, 0.12, 0.7] },
+  { name: "Logos_5", offset: [0, 0.35, -0.15] },
+  { name: "Grid_4", offset: [0, -0.15, -0.45] },
+  { name: "Mechanics_6", offset: [0, -0.55, 0] },
+  { name: "Springs_8", offset: [0, -0.4, 0] },
+];
+
+/* ───────────── Drive / wheel settings ───────────── */
+const WHEELS = {
+  FL: "Tire.001_22",
+  RL: "Tire.002_26",
+  FR: "Tire.003_30",
+  RR: "Tire.004_34",
+};
+const DRIVE_DISTANCE = 14;
+const DIR = 1;
+const SCROLL_VIEWPORTS = 1.5;
+const KEEP_CALIPERS_STILL = true;
+
+/* ───────────── Paint settings ───────────── */
+// Check the console on load: "[Paint] materials" lists every material name.
+// If the wrong part gets painted, put the exact body material name(s) here,
+// e.g. ["Body"]. null = auto-detect.
+const PAINT_MATERIALS = null;
+const PAINT_INCLUDE = /(body|paint|carpaint|exterior|coat|lacquer)/i;
+const PAINT_EXCLUDE =
+  /(glass|window|tire|tyre|rubber|rim|wheel|brake|light|lamp|logo|grid|mech|spring|mirror|chrome|interior|seat|leather|carbon|plane|text|font|metal|black|disc|caliper)/i;
+const PAINT_SECONDS = 1.8; // sweep duration (keep in sync with the CSS background transition)
+const PAINT_GLOW = 1.4; // brightness of the glowing leading edge
+const PAINT_SOFTNESS = 0.16; // edge softness as a fraction of car length
+
+/* ───────────── Helpers ───────────── */
+const safe = (name) => THREE.PropertyBinding.sanitizeNodeName(name);
+const easeInOutQuart = (t) =>
+  t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
+
+const _target = new THREE.Vector3();
+const _q = new THREE.Quaternion();
+const _pq = new THREE.Quaternion();
+const _c = new THREE.Vector3();
+const UP = new THREE.Vector3(0, 1, 0);
+
+function visibleDeep(n) {
+  for (let o = n; o; o = o.parent) if (!o.visible) return false;
+  return true;
+}
+
+function findPaintMaterials(scene) {
+  const counts = new Map();
+  scene.traverse((n) => {
+    if (!n.isMesh || !visibleDeep(n)) return;
+    const mats = Array.isArray(n.material) ? n.material : [n.material];
+    const verts = n.geometry?.attributes?.position?.count ?? 0;
+    mats.forEach((m) => m && counts.set(m, (counts.get(m) || 0) + verts));
+  });
+  const all = [...counts.keys()];
+
+  let picked;
+  if (PAINT_MATERIALS) {
+    picked = all.filter((m) => PAINT_MATERIALS.includes(m.name));
+  } else {
+    picked = all.filter(
+      (m) => PAINT_INCLUDE.test(m.name) && !/glass|window/i.test(m.name),
+    );
+    if (!picked.length) {
+      // fallback: biggest non-excluded material is almost always the body
+      picked = all
+        .filter((m) => !PAINT_EXCLUDE.test(m.name))
+        .sort((a, b) => counts.get(b) - counts.get(a))
+        .slice(0, 1);
+    }
+  }
+
+  console.info(
+    "[Paint] materials:",
+    all.map((m) => `${m.name || "(unnamed)"} (${counts.get(m)} verts)`),
+    "→ painting:",
+    picked.map((m) => m.name || "(unnamed)"),
+  );
+  return picked;
+}
+
+function makePaintUniforms() {
+  return {
+    uFrom: { value: new THREE.Color() },
+    uTo: { value: new THREE.Color() },
+    uProgress: { value: 1 },
+    uDir: { value: new THREE.Vector3(0, 0, 1) },
+    uOrigin: { value: new THREE.Vector3() },
+    uMin: { value: -2 },
+    uMax: { value: 2 },
+    uSoft: { value: 0.5 },
+    uGlow: { value: PAINT_GLOW },
+  };
+}
+
+// Injects a world-space "paint wipe" into MeshStandard/Physical materials.
+function patchPaint(U) {
+  return (shader) => {
+    Object.assign(shader.uniforms, U);
+
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying vec3 vPaintW;")
+      .replace(
+        "#include <project_vertex>",
+        "#include <project_vertex>\nvPaintW = (modelMatrix * vec4(transformed, 1.0)).xyz;",
+      );
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+         varying vec3 vPaintW;
+         uniform vec3 uFrom;
+         uniform vec3 uTo;
+         uniform float uProgress;
+         uniform vec3 uDir;
+         uniform vec3 uOrigin;
+         uniform float uMin;
+         uniform float uMax;
+         uniform float uSoft;
+         uniform float uGlow;`,
+      )
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+         {
+           float t = dot(vPaintW - uOrigin, uDir);
+           float front = mix(uMin - uSoft, uMax + uSoft, uProgress);
+           float m = 1.0 - smoothstep(front - uSoft, front + uSoft, t);
+           diffuseColor.rgb = mix(uFrom, uTo, m);
+
+           float band = exp(-pow((t - front) / (uSoft * 0.55), 2.0));
+           float env = sin(uProgress * 3.14159265);
+           totalEmissiveRadiance += mix(uTo, vec3(1.0), 0.35) * band * env * uGlow;
+         }`,
+      );
+  };
+}
+
+function buildWheelRig(scene) {
+  const tires = {};
+  for (const [key, name] of Object.entries(WHEELS)) {
+    const node = scene.getObjectByName(safe(name));
+    if (!node) {
+      console.warn("[Wheels] missing node:", name, "→", safe(name));
+      return null;
+    }
+    tires[key] = node;
+  }
+
+  scene.updateWorldMatrix(true, true);
+  const wp = (n) => n.getWorldPosition(new THREE.Vector3());
+
+  const front = wp(tires.FL).add(wp(tires.FR)).multiplyScalar(0.5);
+  const rear = wp(tires.RL).add(wp(tires.RR)).multiplyScalar(0.5);
+  const forward = front.sub(rear).setY(0).normalize();
+
+  const axleWorld = wp(tires.FR).sub(wp(tires.FL)).setY(0).normalize();
+
+  const rollDir = new THREE.Vector3().crossVectors(UP, forward);
+  const sign = axleWorld.dot(rollDir) >= 0 ? 1 : -1;
+
+  const radius =
+    new THREE.Box3().setFromObject(tires.FL).getSize(new THREE.Vector3()).y / 2;
+
+  const spinners = [];
+  Object.values(tires).forEach((tire) => {
+    let nodes = [tire];
+    if (KEEP_CALIPERS_STILL) {
+      const kids = tire.children.filter(
+        (c) => !c.name.startsWith("Brake") || c.name.startsWith("BrakeDisc"),
+      );
+      if (kids.length) nodes = kids;
+    }
+    nodes.forEach((node) => {
+      node.parent.getWorldQuaternion(_pq);
+      const axis = axleWorld
+        .clone()
+        .applyQuaternion(_pq.clone().invert())
+        .normalize();
+      spinners.push({ node, axis, base: node.quaternion.clone() });
+    });
+  });
+
+  return { forward, sign, radius, spinners };
+}
+
+/* ───────────── Component ───────────── */
+function CarModel({ url = "/models/ferrari.glb", paint = null, ...props }) {
+  const { scene: original } = useGLTF(url);
+  const scene = useMemo(() => original.clone(true), [original]);
+
+  const groupRef = useRef();
+  const groupBase = useRef(new THREE.Vector3());
+  const partsRef = useRef([]);
+  const rigRef = useRef(null);
+  const scrollTarget = useRef(0);
+  const scrollSmooth = useRef(0);
+  const [hovered, setHovered] = useState(false);
+
+  const paintU = useRef(null);
+  if (!paintU.current) paintU.current = makePaintUniforms();
+  const paintState = useRef({
+    ready: false,
+    original: new THREE.Color(),
+    t: 1,
+  });
+
+  useEffect(() => {
+    const onScroll = () => {
+      scrollTarget.current = THREE.MathUtils.clamp(
+        window.scrollY / (window.innerHeight * SCROLL_VIEWPORTS),
+        0,
+        1,
+      );
+    };
+    window.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+    return () => window.removeEventListener("scroll", onScroll);
+  }, []);
+
+  // Setup: hide leftovers, shadows, explode parts, wheel rig, paint
+  useLayoutEffect(() => {
+    scene.traverse((node) => {
+      const n = node.name.toLowerCase();
+
+      if (n.includes("plane") || n.includes("text") || n.includes("font")) {
+        node.visible = false;
+        node.raycast = () => null;
+        return;
+      }
+
+      if (node.isMesh) {
+        const matName = (node.material?.name || "").toLowerCase();
+        const isGlass =
+          matName.includes("glass") || matName.includes("windows");
+        node.castShadow = !isGlass;
+        node.receiveShadow = false;
+      }
+    });
+
+    partsRef.current = EXPLODE_MAP.map((entry) => {
+      const node = scene.getObjectByName(safe(entry.name));
+      if (!node) {
+        console.warn("[Explode] missing node:", entry.name, "→", safe(entry.name));
+        return null;
+      }
+      return {
+        node,
+        basePos: node.position.clone(),
+        offset: new THREE.Vector3(...entry.offset),
+      };
+    }).filter(Boolean);
+
+    if (groupRef.current) groupBase.current.copy(groupRef.current.position);
+    rigRef.current = buildWheelRig(scene);
+
+    /* ── car footprint, so the FERRARI letters can react ── */
+    scene.updateWorldMatrix(true, true);
+    {
+      const fbox = new THREE.Box3();
+      const ftmp = new THREE.Box3();
+      scene.traverse((n) => {
+        if (n.isMesh && visibleDeep(n)) fbox.union(ftmp.setFromObject(n));
+      });
+      const centre = fbox.getCenter(new THREE.Vector3());
+      const o = new THREE.Vector3();
+      groupRef.current?.getWorldPosition(o);
+      carTrack.offset.copy(centre).sub(o).setY(0);
+      const sz = fbox.getSize(new THREE.Vector3());
+      carTrack.radius = Math.max(sz.x, sz.z) * 0.35;
+      carTrack.ready = true;
+    }
+
+    /* ── paint setup ── */
+    const U = paintU.current;
+    const ps = paintState.current;
+    const clones = [];
+    const found = findPaintMaterials(scene);
+
+    if (found.length) {
+      // clone so we never mutate the cached GLTF materials
+      const swap = new Map();
+      found.forEach((m) => {
+        const c = m.clone();
+        c.customProgramCacheKey = () => "ferrari-paint-sweep";
+        c.onBeforeCompile = patchPaint(U);
+        c.needsUpdate = true;
+        swap.set(m, c);
+        clones.push(c);
+      });
+      scene.traverse((n) => {
+        if (!n.isMesh) return;
+        n.material = Array.isArray(n.material)
+          ? n.material.map((m) => swap.get(m) || m)
+          : swap.get(n.material) || n.material;
+      });
+
+      ps.original.copy(found[0].color);
+      U.uFrom.value.copy(ps.original);
+      U.uTo.value.copy(ps.original);
+      U.uProgress.value = 1;
+      ps.t = 1;
+
+      // sweep direction = the car's nose direction; range = car length
+      const dir = rigRef.current ? rigRef.current.forward : new THREE.Vector3(0, 0, 1);
+      U.uDir.value.copy(dir);
+
+      scene.updateWorldMatrix(true, true);
+      const origin = new THREE.Vector3();
+      groupRef.current?.getWorldPosition(origin);
+      const box = new THREE.Box3();
+      const b = new THREE.Box3();
+      scene.traverse((n) => {
+        if (n.isMesh && visibleDeep(n)) box.union(b.setFromObject(n));
+      });
+      let min = Infinity;
+      let max = -Infinity;
+      for (let i = 0; i < 8; i++) {
+        _c.set(
+          i & 1 ? box.max.x : box.min.x,
+          i & 2 ? box.max.y : box.min.y,
+          i & 4 ? box.max.z : box.min.z,
+        );
+        const t = _c.sub(origin).dot(dir);
+        min = Math.min(min, t);
+        max = Math.max(max, t);
+      }
+      U.uMin.value = min;
+      U.uMax.value = max;
+      U.uSoft.value = (max - min) * PAINT_SOFTNESS;
+      ps.ready = true;
+    } else {
+      console.warn("[Paint] no paint material found. Set PAINT_MATERIALS.");
+      ps.ready = false;
+    }
+
+    return () => clones.forEach((c) => c.dispose());
+  }, [scene]);
+
+  // Start a sweep whenever the paint prop changes
+  useEffect(() => {
+    const ps = paintState.current;
+    if (!ps.ready) return;
+    const U = paintU.current;
+    const to = paint ? new THREE.Color(paint) : ps.original;
+    if (U.uTo.value.equals(to)) return;
+
+    // freeze whatever is currently dominant as the "from" color
+    if (ps.t >= 1 || U.uProgress.value > 0.5) U.uFrom.value.copy(U.uTo.value);
+    U.uTo.value.copy(to);
+    U.uProgress.value = 0;
+    ps.t = 0;
+  }, [paint, scene]);
+
+  useFrame((_, delta) => {
+    // ── Paint sweep ──
+    const U = paintU.current;
+    const ps = paintState.current;
+    if (ps.t < 1) {
+      ps.t = Math.min(1, ps.t + delta / PAINT_SECONDS);
+      U.uProgress.value = easeInOutQuart(ps.t);
+      if (ps.t >= 1) {
+        U.uProgress.value = 1;
+        U.uFrom.value.copy(U.uTo.value);
+      }
+    }
+    if (groupRef.current) groupRef.current.getWorldPosition(U.uOrigin.value);
+    // ── publish car position for the letters ──
+    if (groupRef.current) {
+      groupRef.current.getWorldPosition(carTrack.pos);
+      carTrack.pos.add(carTrack.offset);
+    }
+
+    // ── Smooth scroll ──
+    scrollSmooth.current = THREE.MathUtils.damp(
+      scrollSmooth.current,
+      scrollTarget.current,
+      4,
+      delta,
+    );
+
+    // ── Drive + roll wheels ──
+    const rig = rigRef.current;
+    if (rig && groupRef.current) {
+      const d = scrollSmooth.current * DRIVE_DISTANCE * DIR;
+
+      groupRef.current.position
+        .copy(rig.forward)
+        .multiplyScalar(d)
+        .add(groupBase.current);
+
+      const angle = (rig.sign * d) / rig.radius;
+      for (const s of rig.spinners) {
+        _q.setFromAxisAngle(s.axis, angle);
+        s.node.quaternion.copy(s.base).premultiply(_q);
+      }
+    }
+
+    // ── Hover explode ──
+    const amount = hovered ? 1 : 0;
+    for (const { node, basePos, offset } of partsRef.current) {
+      _target.copy(basePos).addScaledVector(offset, amount);
+      node.position.x = THREE.MathUtils.damp(
+        node.position.x,
+        _target.x,
+        6,
+        delta,
+      );
+      node.position.y = THREE.MathUtils.damp(
+        node.position.y,
+        _target.y,
+        6,
+        delta,
+      );
+      node.position.z = THREE.MathUtils.damp(
+        node.position.z,
+        _target.z,
+        6,
+        delta,
+      );
+    }
+  });
+
+  return (
+    <group
+      ref={groupRef}
+      {...props}
+      onPointerEnter={(e) => {
+        e.stopPropagation();
+        setHovered(true);
+        document.body.style.cursor = "pointer";
+      }}
+      onPointerLeave={(e) => {
+        e.stopPropagation();
+        setHovered(false);
+        document.body.style.cursor = "auto";
+      }}
+    >
+      <primitive object={scene} />
+    </group>
+  );
+}
+
+useGLTF.preload("/models/ferrari.glb");
+
+export default CarModel;
+
+--------- src/components/canvas/carTrack.js ---------
+import * as THREE from "three";
+
+// Written by CarModel every frame, read by HeroText letters.
+export const carTrack = {
+  ready: false,
+  pos: new THREE.Vector3(), // car body centre (world)
+  offset: new THREE.Vector3(), // body centre relative to the car group origin
+  radius: 2, // rough footprint radius (world units)
+};
+
+--------- src/components/canvas/HeroText.jsx ---------
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { Text } from "@react-three/drei";
+import { useFrame, useThree } from "@react-three/fiber";
+import * as THREE from "three";
+import { carTrack } from "./carTrack";
+
+const WORD = "FERRARI";
+const FONT_SIZE = 5.5;
+const GAP = FONT_SIZE * 0.07;
+const BLEED = 1.06;
+
+/* ── car-pass reaction (tune these) ── */
+const SINK_DEPTH = 2.2; // how far a letter drops when the car is over it
+const SINK_INNER = 0.6; // full sink within this × letter half-width of the car
+const SINK_REACH = 1.4; // × car radius: how far the falloff extends
+const SINK_SPEED = 9; // damping: higher = snappier
+
+const BASE_COLOR = new THREE.Color("#1e2126");
+const HOVER_COLOR = new THREE.Color("#e11d48");
+const _w = new THREE.Vector3();
+
+function Letter({ char, index, x, onMeasure }) {
+  const meshRef = useRef();
+  const inkRef = useRef([0, 0]);
+  const [hovered, setHovered] = useState(false);
+
+  useEffect(() => {
+    if (meshRef.current?.material)
+      meshRef.current.material.color.copy(BASE_COLOR);
+  }, []);
+
+  useFrame((_, delta) => {
+    const m = meshRef.current;
+    if (!m) return;
+
+    let near = 0;
+    const [minX, maxX] = inkRef.current;
+    if (carTrack.ready && maxX > minX) {
+      _w.set((minX + maxX) / 2, 0, 0);
+      m.localToWorld(_w);
+      const halfW = ((maxX - minX) / 2) * m.matrixWorld.getMaxScaleOnAxis();
+      const d = Math.hypot(_w.x - carTrack.pos.x, _w.z - carTrack.pos.z);
+      const inner = halfW * SINK_INNER;
+      near =
+        1 -
+        THREE.MathUtils.smoothstep(
+          d,
+          inner,
+          inner + carTrack.radius * SINK_REACH,
+        );
+    }
+
+    const targetZ = Math.min(hovered ? -2.2 : 0, -SINK_DEPTH * near);
+    m.position.z = THREE.MathUtils.damp(
+      m.position.z,
+      targetZ,
+      SINK_SPEED,
+      delta,
+    );
+    m.material.color.lerp(hovered ? HOVER_COLOR : BASE_COLOR, 0.12);
+  });
+
+  return (
+    <Text
+      ref={meshRef}
+      font="/fonts/Syncopate-Bold.ttf"
+      fontSize={FONT_SIZE}
+      anchorX="left"
+      anchorY="middle"
+      position={[x, 0, 0]}
+      onSync={(troika) => {
+        const info = troika.textRenderInfo;
+        const b = info && (info.visibleBounds || info.blockBounds);
+        if (b) {
+          inkRef.current = [b[0], b[2]];
+          onMeasure(index, b[0], b[2]);
+        }
+      }}
+      onPointerOver={(e) => {
+        e.stopPropagation();
+        setHovered(true);
+        document.body.style.cursor = "pointer";
+      }}
+      onPointerOut={(e) => {
+        e.stopPropagation();
+        setHovered(false);
+        document.body.style.cursor = "auto";
+      }}
+      onPointerMove={(e) => e.stopPropagation()}
+      onPointerDown={(e) => e.stopPropagation()}
+    >
+      {char}
+    </Text>
+  );
+}
+
+function HeroText({ position = [-8, 0.082, 2.6] }) {
+  const camera = useThree((s) => s.camera);
+  const viewport = useThree((s) => s.viewport);
+  const size = useThree((s) => s.size);
+  const letters = WORD.split("");
+
+  const [bounds, setBounds] = useState({});
+  const onMeasure = useCallback((i, min, max) => {
+    setBounds((prev) => {
+      const p = prev[i];
+      if (p && Math.abs(p[0] - min) < 1e-4 && Math.abs(p[1] - max) < 1e-4)
+        return prev;
+      return { ...prev, [i]: [min, max] };
+    });
+  }, []);
+
+  const ready = letters.every((_, i) => bounds[i]);
+
+  const layout = useMemo(() => {
+    if (!ready) return null;
+    let cursor = 0;
+    const xs = letters.map((_, i) => {
+      const [min, max] = bounds[i];
+      const x = cursor - min;
+      cursor += max - min + GAP;
+      return x;
+    });
+    return { xs, total: cursor - GAP };
+    // eslint-disable-next-line
+  }, [ready, bounds]);
+
+  const scale = useMemo(() => {
+    if (!layout) return 1;
+    const vp = viewport.getCurrentViewport(
+      camera,
+      new THREE.Vector3(position[0], position[1], position[2]),
+    );
+    return (vp.width * BLEED) / layout.total;
+    // eslint-disable-next-line
+  }, [layout, viewport, camera, size, position[0], position[1], position[2]]);
+
+  return (
+    <group
+      position={position}
+      rotation={[-Math.PI / 2, 0, 4.5]}
+      visible={ready}
+      onPointerOver={(e) => e.stopPropagation()}
+      onPointerOut={(e) => e.stopPropagation()}
+      onPointerMove={(e) => e.stopPropagation()}
+    >
+      <group scale={scale}>
+        <group position={[layout ? -layout.total / 2 : 0, 0, 0]}>
+          {letters.map((char, i) => (
+            <Letter
+              key={i}
+              char={char}
+              index={i}
+              x={layout ? layout.xs[i] : 0}
+              onMeasure={onMeasure}
+            />
+          ))}
+        </group>
+      </group>
+    </group>
+  );
+}
+
+export default HeroText;
+
+--------- src/components/showcase/ShowStage.jsx ---------
+import { useEffect, useMemo, useRef } from "react";
+import { useFrame, useThree } from "@react-three/fiber";
+import * as THREE from "three";
+import { loadGLB } from "./loadGLB";
+import { prepareCar, CLIP } from "./prepareCar";
+import { lift } from "./colors";
+import { PODIUM_URL, SHOW_BASE } from "../../data/showcase";
+
+const CAR_LIFT = 0.27; // metres the car sits ABOVE the measured floor
+const IDLE = 0.2; // rad/s resting spin
+const PEAK = 8; // rad/s at the swap / entrance
+const SINK = -1.9; // how far a car drops into the podium
+const BASE_FOV = 28;
+const CAM_DIST = 13.5;
+const PODIUM_COLOR = "#0d0f13"; // set to null to keep the colours from Blender
+const LOOK = new THREE.Vector3(0, 0.15, 0);
+const DIR = new THREE.Vector3(0.485, 0.242, 0.84).normalize();
+const damp = THREE.MathUtils.damp;
+
+/* ── soft shadow tuning ── */
+const SHADOW_WIDE = [3.0, 6.6]; // [width (car side to side), length (nose to tail)]
+const SHADOW_CORE = [2.0, 4.8];
+const SHADOW_WIDE_OPACITY = 0.55;
+const SHADOW_CORE_OPACITY = 0.6;
+
+function makeGlowTexture() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 512;
+  const g = c.getContext("2d");
+  const grad = g.createRadialGradient(256, 256, 0, 256, 256, 256);
+  grad.addColorStop(0, "rgba(255,255,255,0)");
+  grad.addColorStop(0.6, "rgba(255,255,255,0)");
+  grad.addColorStop(0.9, "rgba(255,255,255,0.4)");
+  grad.addColorStop(0.97, "rgba(255,255,255,0.08)");
+  grad.addColorStop(1, "rgba(255,255,255,0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 512, 512);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+// soft dark blob: opaque core fading to nothing (stretched into an ellipse by the plane)
+function makeShadowTexture() {
+  const c = document.createElement("canvas");
+  c.width = c.height = 256;
+  const g = c.getContext("2d");
+  const grad = g.createRadialGradient(128, 128, 0, 128, 128, 128);
+  grad.addColorStop(0, "rgba(0,0,0,1)");
+  grad.addColorStop(0.3, "rgba(0,0,0,0.75)");
+  grad.addColorStop(0.6, "rgba(0,0,0,0.28)");
+  grad.addColorStop(0.85, "rgba(0,0,0,0.06)");
+  grad.addColorStop(1, "rgba(0,0,0,0)");
+  g.fillStyle = grad;
+  g.fillRect(0, 0, 256, 256);
+  const t = new THREE.CanvasTexture(c);
+  t.colorSpace = THREE.SRGBColorSpace;
+  return t;
+}
+
+export default function ShowStage({ cars, target, hexes, entered, onLoading, onRevert }) {
+  const root = useRef(null); // sits at the podium floor height
+  const spin = useRef(null);
+  const slot = useRef(null);
+  const glow = useRef(null);
+  const shWide = useRef(null);
+  const shCore = useRef(null);
+  const camera = useThree((s) => s.camera);
+  const gl = useThree((s) => s.gl);
+  const size = useThree((s) => s.size);
+  const glowTex = useMemo(makeGlowTexture, []);
+  const shadowTex = useMemo(makeShadowTexture, []);
+
+  const P = useRef({});
+  P.current = { cars, target, hexes, entered, onLoading, onRevert };
+
+  const S = useRef(null);
+  if (!S.current) {
+    S.current = {
+      shown: -1,
+      current: null,
+      phase: "wait", // wait | in | idle | out | dead
+      t: 0,
+      w: IDLE,
+      y: SINK,
+      podium: false,
+      ready: new Map(),
+      loading: new Set(),
+      failed: new Set(),
+      ring: null,
+      tint: new THREE.Color("#ffffff"),
+      tintKey: "",
+      flag: false,
+      drag: false,
+      dragW: 0,
+      lastX: 0,
+      lastT: 0,
+    };
+  }
+
+  /* ── loading ── */
+  const ensure = useRef(null);
+  if (!ensure.current) {
+    ensure.current = (i) => {
+      const s = S.current;
+      const list = P.current.cars;
+      if (i < 0 || i >= list.length) return;
+      if (s.ready.has(i) || s.loading.has(i) || s.failed.has(i)) return;
+      s.loading.add(i);
+      const cfg = list[i];
+      loadGLB(SHOW_BASE + cfg.file)
+        .then((g) => {
+          s.ready.set(i, prepareCar(g, cfg));
+          s.loading.delete(i);
+          if (i === P.current.target) {
+            const n = list.length;
+            ensure.current((i + 1) % n);
+            ensure.current((i - 1 + n) % n);
+          }
+        })
+        .catch((err) => {
+          console.error("[Showcase] failed to load", cfg.file, err);
+          s.loading.delete(i);
+          s.failed.add(i);
+        });
+    };
+  }
+
+  useEffect(() => {
+    ensure.current(target);
+  }, [target]);
+
+  /* ── podium: per-mesh materials, ring glow, MEASURE the floor height ── */
+  useEffect(() => {
+    let dead = false;
+    let node = null;
+    loadGLB(PODIUM_URL)
+      .then((g) => {
+        if (dead || !spin.current || !root.current) return;
+        node = g.scene;
+        spin.current.add(node);
+        root.current.position.y = 0;
+        root.current.updateWorldMatrix(true, true);
+
+        const seen = [];
+        node.traverse((n) => {
+          if (!n.isMesh || !n.material) return;
+          const prep = (m) => {
+            const c = m.clone(); // never share: the ring must not tint the podium
+            seen.push(`${n.name} / ${m.name || "(unnamed)"}`);
+            const isRing = /ring/i.test(n.name);
+            const isMark = /(tick|north)/i.test(n.name);
+
+            if (isRing) {
+              S.current.ring = c;
+              if (c.color) c.color.set("#000000");
+              c.emissiveIntensity = 2.5;
+              return c;
+            }
+
+            // everything else: no glow at all
+            if (c.emissive) c.emissive.set("#000000");
+            c.emissiveIntensity = 0;
+            c.emissiveMap = null;
+
+            if (!isMark && PODIUM_COLOR && c.color) {
+              c.color.set(PODIUM_COLOR);
+              c.map = null;
+              c.metalness = 0.1;
+              c.roughness = 0.5;
+              c.envMapIntensity = 0.35;
+            }
+            c.needsUpdate = true;
+            return c;
+          };
+          n.material = Array.isArray(n.material) ? n.material.map(prep) : prep(n.material);
+        });
+        console.info("[Showcase] podium meshes / materials:", seen);
+        if (!S.current.ring) {
+          console.warn('[Showcase] no mesh named "Ring" found: ring glow disabled');
+        }
+
+        // measure the real floor: ray straight down near the centre,
+        // with double-sided faces so flipped normals can't make it miss
+        const sides = [];
+        node.traverse((n) => {
+          if (!n.isMesh || !n.material) return;
+          const mats = Array.isArray(n.material) ? n.material : [n.material];
+          mats.forEach((m) => {
+            sides.push([m, m.side]);
+            m.side = THREE.DoubleSide;
+          });
+        });
+        const rc = new THREE.Raycaster(
+          new THREE.Vector3(0.6, 20, 0.5),
+          new THREE.Vector3(0, -1, 0),
+        );
+        const hit = rc.intersectObject(node, true)[0];
+        sides.forEach(([m, sd]) => (m.side = sd));
+
+        const fy = hit ? hit.point.y : 0;
+        if (!hit) console.warn("[Showcase] could not measure podium floor, using 0");
+        console.info("[Showcase] podium floor height:", fy.toFixed(3));
+        root.current.position.y = fy;
+        CLIP.constant = 0.02 - fy; // clip everything below the floor
+        S.current.podium = true;
+      })
+      .catch((e) => {
+        console.error("[Showcase] podium failed to load", e);
+        S.current.podium = true;
+      });
+    return () => {
+      dead = true;
+      if (node && node.parent) node.parent.remove(node);
+    };
+  }, []);
+
+  /* ── drag to spin ── */
+  useEffect(() => {
+    const el = gl.domElement;
+    const s = S.current;
+    const down = (e) => {
+      s.drag = true;
+      s.lastX = e.clientX;
+      s.lastT = performance.now();
+      s.dragW = 0;
+      try {
+        el.setPointerCapture(e.pointerId);
+      } catch {}
+    };
+    const move = (e) => {
+      if (!s.drag || !spin.current) return;
+      const now = performance.now();
+      const dx = e.clientX - s.lastX;
+      const dts = Math.max(now - s.lastT, 8) / 1000;
+      spin.current.rotation.y += dx * 0.008;
+      s.dragW = THREE.MathUtils.lerp(s.dragW, (dx * 0.008) / dts, 0.5);
+      s.lastX = e.clientX;
+      s.lastT = now;
+    };
+    const up = (e) => {
+      if (!s.drag) return;
+      s.drag = false;
+      const still = performance.now() - s.lastT > 80;
+      s.w = still ? 0 : THREE.MathUtils.clamp(s.dragW, -7, 7);
+      try {
+        el.releasePointerCapture(e.pointerId);
+      } catch {}
+    };
+    el.addEventListener("pointerdown", down);
+    el.addEventListener("pointermove", move);
+    el.addEventListener("pointerup", up);
+    el.addEventListener("pointercancel", up);
+    return () => {
+      el.removeEventListener("pointerdown", down);
+      el.removeEventListener("pointermove", move);
+      el.removeEventListener("pointerup", up);
+      el.removeEventListener("pointercancel", up);
+    };
+  }, [gl]);
+
+  /* ── per frame ── */
+  useFrame((state, dt0) => {
+    const dt = Math.min(dt0, 0.05);
+    const s = S.current;
+    const p = P.current;
+    const sp = spin.current;
+    const sl = slot.current;
+    if (!sp || !sl) return;
+    const want = p.target;
+
+    const setLoading = (v) => {
+      if (s.flag !== v) {
+        s.flag = v;
+        p.onLoading(v);
+      }
+    };
+    const swap = (next, idx) => {
+      if (s.current && s.current !== next) sl.remove(s.current.holder);
+      if (next.holder.parent !== sl) sl.add(next.holder);
+      s.current = next;
+      s.shown = idx;
+      next.setPaint(p.hexes[idx], false);
+    };
+
+    let tw = IDLE;
+    let rate = 1.8;
+    let ty = 0;
+
+    switch (s.phase) {
+      case "idle":
+        if (want !== s.shown) {
+          s.phase = "out";
+          s.t = 0;
+        }
+        break;
+      case "out":
+        s.t += dt;
+        tw = PEAK;
+        rate = 2.6;
+        ty = s.t > 0.5 ? SINK : 0;
+        if (s.t > 1.1) s.phase = "wait";
+        break;
+      case "wait": {
+        tw = PEAK;
+        rate = 3;
+        ty = SINK;
+        if (!s.ready.has(want) && !s.loading.has(want) && !s.failed.has(want)) {
+          ensure.current(want);
+        }
+        const next = s.ready.get(want);
+        if (next) {
+          const gate = s.shown !== -1 || (p.entered && s.podium);
+          if (gate) {
+            swap(next, want);
+            s.phase = "in";
+            s.t = 0;
+            setLoading(false);
+          }
+        } else if (s.failed.has(want)) {
+          setLoading(false);
+          if (s.current) {
+            p.onRevert(s.shown);
+            s.phase = "in";
+            s.t = 0;
+          } else {
+            s.phase = "dead";
+          }
+        } else {
+          setLoading(p.entered);
+        }
+        break;
+      }
+      case "in":
+        s.t += dt;
+        tw = IDLE;
+        rate = 1.7;
+        ty = 0;
+        if (want !== s.shown && s.t > 0.6) {
+          s.phase = "out";
+          s.t = 0;
+        } else if (s.t > 0.4 && Math.abs(s.y) < 0.02 && s.w < IDLE + 0.5) {
+          s.phase = "idle";
+          s.y = 0;
+        }
+        break;
+      default:
+        break;
+    }
+
+    // sink / rise (the car rests CAR_LIFT above the floor)
+    s.y = damp(s.y, ty, ty < s.y ? 5 : 3.2, dt);
+    sl.position.y = s.y + CAR_LIFT;
+
+    // soft shadow: strongest when the car is up, gone when it has sunk
+    const up = THREE.MathUtils.clamp(1 - s.y / SINK, 0, 1);
+    const shadowK = up * up * (3 - 2 * up);
+    if (shWide.current) shWide.current.material.opacity = SHADOW_WIDE_OPACITY * shadowK;
+    if (shCore.current) shCore.current.material.opacity = SHADOW_CORE_OPACITY * shadowK;
+
+    // spin
+    if (!s.drag) {
+      s.w = damp(s.w, tw, rate, dt);
+      sp.rotation.y += s.w * dt;
+    }
+    const speedN = THREE.MathUtils.clamp((Math.abs(s.w) - IDLE) / (PEAK - IDLE), 0, 1);
+
+    // paint
+    if (s.current) {
+      const hx = p.hexes[s.shown];
+      if (s.current.hex !== hx) s.current.setPaint(hx, true);
+      s.current.update(dt);
+    }
+
+    // ring + floor glow follow the selected colour
+    const wantHex = p.hexes[want] || p.hexes[0];
+    if (s.tintKey !== wantHex) {
+      s.tintKey = wantHex;
+      s.tint.set(lift(wantHex));
+    }
+    const k = 1 - Math.exp(-3 * dt);
+    if (s.ring && s.ring.emissive) {
+      s.ring.emissive.lerp(s.tint, k);
+      s.ring.emissiveIntensity = 2.5 + 2.5 * speedN;
+    }
+    if (glow.current) {
+      const m = glow.current.material;
+      m.color.lerp(s.tint, k);
+      m.opacity = 0.5 + 0.5 * speedN;
+    }
+
+    // camera: responsive distance, pointer parallax, speed fov
+    const aspect = size.width / Math.max(size.height, 1);
+    const dist = CAM_DIST * (aspect < 1.5 ? Math.min(2.2, 1.5 / aspect) : 1);
+    const fy = root.current ? root.current.position.y : 0;
+    camera.position.x = damp(camera.position.x, DIR.x * dist + state.pointer.x * 0.8, 3, dt);
+    camera.position.y = damp(camera.position.y, fy + DIR.y * dist + state.pointer.y * 0.4, 3, dt);
+    camera.position.z = damp(camera.position.z, DIR.z * dist, 3, dt);
+    camera.fov = BASE_FOV + speedN * 5;
+    camera.updateProjectionMatrix();
+    camera.lookAt(LOOK.x, LOOK.y + fy, LOOK.z);
+  });
+
+  return (
+    <group ref={root}>
+      <group ref={spin}>
+        {/* soft shadow: turns with the car (plane width = car side-to-side, length = nose-to-tail) */}
+        <mesh ref={shWide} rotation-x={-Math.PI / 2} position-y={0.02} renderOrder={1}>
+          <planeGeometry args={SHADOW_WIDE} />
+          <meshBasicMaterial
+            map={shadowTex}
+            color="#000000"
+            transparent
+            opacity={0}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+        <mesh ref={shCore} rotation-x={-Math.PI / 2} position-y={0.022} renderOrder={1}>
+          <planeGeometry args={SHADOW_CORE} />
+          <meshBasicMaterial
+            map={shadowTex}
+            color="#000000"
+            transparent
+            opacity={0}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+
+        <group ref={slot} />
+
+        <mesh ref={glow} rotation-x={-Math.PI / 2} position-y={0.016} renderOrder={2}>
+          <planeGeometry args={[6.8, 6.8]} />
+          <meshBasicMaterial
+            map={glowTex}
+            color="#ffffff"
+            transparent
+            opacity={0.5}
+            depthWrite={false}
+            blending={THREE.AdditiveBlending}
+            toneMapped={false}
+          />
+        </mesh>
+      </group>
+    </group>
+  );
+}
+
+--------- src/components/showcase/prepareCar.js ---------
+import * as THREE from "three";
+
+// Clips everything below the podium top. This is what makes cars sink into the floor.
+export const CLIP = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0.015);
+
+const TARGET_LEN = 4.4; // every car is scaled to this length (metres)
+const PAINT_SECONDS = 1.5;
+const SOFT = 0.2; // sweep edge softness (fraction of car length)
+const GLOW = 1.3; // brightness of the glowing sweep edge
+
+const STRONG = /(paint|lacquer|clearcoat|livery)/i;
+const INCLUDE = /(body|exterior|coat|yellow|red|gray|grey|rosso|giallo|colou?r)/i;
+const EXCLUDE =
+  /(glass|window|windscreen|tire|tyre|rubber|wheel|brake|caliper|light|lamp|lens|chrome|interior|seat|leather|carbon|black|steel|grille|grill|mirror|logo|badge|plastic|trim|exhaust|vent|plate)/i;
+const RIM = /(^|[^a-z])rims?([^a-z]|$)/i;
+
+const ease = (t) => (t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2);
+
+/* ───────── materials ───────── */
+function materialWeights(root) {
+  const map = new Map();
+  root.traverse((n) => {
+    if (!n.isMesh || !n.geometry) return;
+    const g = n.geometry;
+    const total = g.index ? g.index.count : g.attributes.position.count;
+    if (Array.isArray(n.material)) {
+      n.material.forEach((m, i) => {
+        const grp = g.groups.filter((x) => x.materialIndex === i);
+        const w = grp.length ? grp.reduce((s, x) => s + x.count, 0) : total;
+        map.set(m, (map.get(m) || 0) + w);
+      });
+    } else {
+      map.set(n.material, (map.get(n.material) || 0) + total);
+    }
+  });
+  return map;
+}
+
+function colorDist(a, b) {
+  return Math.sqrt((a.r - b.r) ** 2 + (a.g - b.g) ** 2 + (a.b - b.b) ** 2);
+}
+
+function pickPaint(weights, cfg) {
+  const all = [...weights.keys()].filter((m) => m && m.isMaterial);
+
+  if (cfg.paintMaterial) {
+    const names = [].concat(cfg.paintMaterial).map((s) => s.toLowerCase());
+    const hit = all.filter((m) => names.includes((m.name || "").toLowerCase()));
+    if (hit.length) return hit;
+    console.warn("[Showcase]", cfg.id, "paintMaterial not found, auto-detecting");
+  }
+
+  const strong = all.filter((m) => STRONG.test(m.name || ""));
+  if (strong.length) return strong;
+
+  const bad = (m) => EXCLUDE.test(m.name || "") || RIM.test(m.name || "");
+  const ok = all.filter((m) => !bad(m));
+  const named = ok.filter((m) => INCLUDE.test(m.name || ""));
+  if (named.length) return named;
+
+  const stock = new THREE.Color(cfg.colors[0].hex);
+  const pool = ok.length ? ok : all;
+  const score = (m) => (m.color ? colorDist(m.color, stock) : 9);
+  pool.sort((a, b) => {
+    const d = score(a) - score(b);
+    return Math.abs(d) > 0.05 ? d : weights.get(b) - weights.get(a);
+  });
+  return pool.slice(0, 1);
+}
+
+/* ───────── direction ───────── */
+function detectForward(root) {
+  const front = [];
+  const rear = [];
+  root.traverse((n) => {
+    const nm = n.name || "";
+    if (!/wheel/i.test(nm)) return;
+    if (/(fr|front)/i.test(nm)) front.push(n);
+    else if (/(bk|back|rear|rr)/i.test(nm)) rear.push(n);
+  });
+
+  const avg = (list) => {
+    const v = new THREE.Vector3();
+    list.forEach((n) =>
+      v.add(new THREE.Box3().setFromObject(n).getCenter(new THREE.Vector3())),
+    );
+    return v.divideScalar(list.length);
+  };
+
+  if (front.length && rear.length) {
+    const f = avg(front).sub(avg(rear));
+    f.y = 0;
+    if (f.lengthSq() > 1e-6) return f.normalize();
+  }
+
+  console.warn("[Showcase] wheel nodes not found, guessing direction");
+  const sz = new THREE.Box3().setFromObject(root).getSize(new THREE.Vector3());
+  return sz.x > sz.z ? new THREE.Vector3(1, 0, 0) : new THREE.Vector3(0, 0, 1);
+}
+
+/* ───────── paint sweep shader ───────── */
+function makeUniforms() {
+  return {
+    uFrom: { value: new THREE.Color() },
+    uTo: { value: new THREE.Color() },
+    uProgress: { value: 1 },
+    uInv: { value: new THREE.Matrix4() },
+    uMin: { value: -2 },
+    uMax: { value: 2 },
+    uSoft: { value: 0.5 },
+    uGlow: { value: GLOW },
+  };
+}
+
+function paintPatch(U) {
+  return (shader) => {
+    Object.assign(shader.uniforms, U);
+
+    shader.vertexShader = shader.vertexShader
+      .replace("#include <common>", "#include <common>\nvarying vec3 vPaintW;")
+      .replace(
+        "#include <project_vertex>",
+        "#include <project_vertex>\nvPaintW = (modelMatrix * vec4(transformed, 1.0)).xyz;",
+      );
+
+    shader.fragmentShader = shader.fragmentShader
+      .replace(
+        "#include <common>",
+        `#include <common>
+         varying vec3 vPaintW;
+         uniform vec3 uFrom;
+         uniform vec3 uTo;
+         uniform float uProgress;
+         uniform mat4 uInv;
+         uniform float uMin;
+         uniform float uMax;
+         uniform float uSoft;
+         uniform float uGlow;`,
+      )
+      .replace(
+        "#include <color_fragment>",
+        `#include <color_fragment>
+         {
+           vec3 pl = (uInv * vec4(vPaintW, 1.0)).xyz;
+           float t = pl.z;
+           float front = mix(uMin - uSoft, uMax + uSoft, uProgress);
+           float m = 1.0 - smoothstep(front - uSoft, front + uSoft, t);
+           diffuseColor.rgb = mix(uFrom, uTo, m);
+           float k = (t - front) / (uSoft * 0.55);
+           float band = exp(-k * k);
+           float env = sin(uProgress * 3.14159265);
+           totalEmissiveRadiance += mix(uTo, vec3(1.0), 0.35) * band * env * uGlow;
+         }`,
+      );
+  };
+}
+
+/* ───────── main ───────── */
+export function prepareCar(gltf, cfg) {
+  const root = gltf.scene;
+  root.position.set(0, 0, 0);
+  root.rotation.set(0, 0, 0);
+  root.scale.set(1, 1, 1);
+
+  const holder = new THREE.Group();
+  holder.add(root);
+  holder.updateMatrixWorld(true);
+
+  // 1. face +Z
+  const fwd = detectForward(root);
+  if (cfg.flip) fwd.negate();
+  root.rotation.y = -Math.atan2(fwd.x, fwd.z);
+  holder.updateMatrixWorld(true);
+
+  // 2. scale to the common length
+  const box = new THREE.Box3().setFromObject(holder, true);
+  const size = box.getSize(new THREE.Vector3());
+  root.scale.setScalar(TARGET_LEN / Math.max(size.x, size.z, 0.001));
+  holder.updateMatrixWorld(true);
+
+  // 3. centre on the podium, tyres on the floor
+  box.setFromObject(holder, true);
+  const c = box.getCenter(new THREE.Vector3());
+  root.position.set(-c.x, -box.min.y, -c.z);
+  holder.updateMatrixWorld(true);
+  box.setFromObject(holder, true);
+
+  // 4. materials: clipping everywhere, paint sweep on the body paint
+  const weights = materialWeights(root);
+  const paint = pickPaint(weights, cfg);
+  console.info(
+    `[Showcase] ${cfg.id} materials:`,
+    [...weights].map(([m, w]) => `${m.name || "(unnamed)"} (${w})`),
+    "→ painting:",
+    paint.map((m) => m.name || "(unnamed)"),
+  );
+
+  const U = makeUniforms();
+  U.uMin.value = box.min.z;
+  U.uMax.value = box.max.z;
+  U.uSoft.value = (box.max.z - box.min.z) * SOFT;
+
+  const paintSet = new Set(paint);
+  weights.forEach((_, m) => {
+    if (!m || !m.isMaterial) return;
+    m.clippingPlanes = [CLIP];
+    if (paintSet.has(m)) {
+      m.customProgramCacheKey = () => "showcase-paint";
+      m.onBeforeCompile = paintPatch(U);
+    }
+    m.needsUpdate = true;
+  });
+
+  let prog = 1;
+  const api = {
+    holder,
+    hex: null,
+    hasPaint: false,
+    setPaint(hex, animate) {
+      const to = new THREE.Color(hex);
+      if (!api.hasPaint || !animate) {
+        U.uFrom.value.copy(to);
+        U.uTo.value.copy(to);
+        U.uProgress.value = 1;
+        prog = 1;
+      } else {
+        if (prog >= 1 || U.uProgress.value > 0.5) U.uFrom.value.copy(U.uTo.value);
+        U.uTo.value.copy(to);
+        U.uProgress.value = 0;
+        prog = 0;
+      }
+      api.hex = hex;
+      api.hasPaint = true;
+    },
+    update(dt) {
+      if (prog < 1) {
+        prog = Math.min(1, prog + dt / PAINT_SECONDS);
+        U.uProgress.value = ease(prog);
+        if (prog >= 1) {
+          U.uProgress.value = 1;
+          U.uFrom.value.copy(U.uTo.value);
+        }
+      }
+      holder.updateWorldMatrix(true, false);
+      U.uInv.value.copy(holder.matrixWorld).invert();
+    },
+  };
+  return api;
+}
+
+--------- src/data/cars.js ---------
+// One model, many paints. Edit colors, copy and specs here.
+// theme = [highlight, mid, shadow] stops of the background gradient.
+// paint = body color (null = the GLB's original paint, i.e. the yellow).
+// The spec numbers are PLACEHOLDERS: replace with real ones.
+export const CAR_MODEL = "/models/ferrari.glb";
+
+export const CARS = [
+  {
+    id: "yellow",
+    paint: null,
+    theme: ["#f7d64e", "#efca38", "#dcb022"],
+    tagline: "Sculpted for speed",
+    specs: [
+      { val: "V12", lines: ["6.5 L", "830 CV"] },
+      { val: "0 – 100", lines: ["2.9 SEC"] },
+    ],
+  },
+  {
+    id: "green",
+    paint: "#1b8a55",
+    theme: ["#7fc79a", "#4ea574", "#43DA46FF"],
+    tagline: "Born on the track",
+    specs: [
+      { val: "V12", lines: ["6.5 L", "800 CV"] },
+      { val: "0 – 100", lines: ["3.0 SEC"] },
+    ],
+  },
+  {
+    id: "red",
+    paint: "#d1121b",
+    theme: ["#ee6a5e", "#d23a30", "#a11f1b"],
+    tagline: "Power, refined",
+    specs: [
+      { val: "V8", lines: ["3.9 L", "720 CV"] },
+      { val: "0 – 100", lines: ["2.9 SEC"] },
+    ],
+  },
+  {
+    id: "silver",
+    paint: "#b9bcc2",
+    theme: ["#d9d6d0", "#bdb9b1", "#8f8b83"],
+    tagline: "Pure emotion",
+    specs: [
+      { val: "V12", lines: ["6.3 L", "780 CV"] },
+      { val: "0 – 100", lines: ["2.9 SEC"] },
+    ],
+  },
+];
+
+--------- src/data/showcase.js ---------
+// Showcase config. Names, specs and descriptions are PLACEHOLDERS: edit freely.
+// colors[0] should be the car's real factory colour (used to detect the paint material).
+//   paintMaterial: "Name"   force which material is the paint (see console log)
+//   flip: true              if a car drives/sweeps backwards
+export const SHOW_BASE = "/models/showcase/";
+export const PODIUM_URL = SHOW_BASE + "podium.glb";
+
+const SWATCHES = {
+  giallo: { name: "Giallo Modena", hex: "#f7d64e" },
+  rosso: { name: "Rosso Corsa", hex: "#d1121b" },
+  nero: { name: "Nero Daytona", hex: "#15171a" },
+  grigio: { name: "Grigio Titanio", hex: "#8a8d93" },
+  bianco: { name: "Bianco Avus", hex: "#ecebe6" },
+  blu: { name: "Blu Tour de France", hex: "#1f3f8f" },
+  verde: { name: "Verde Zeltweg", hex: "#1b6b45" },
+};
+const S = SWATCHES;
+
+export const SHOW_CARS = [
+  {
+    id: "599-yellow",
+    file: "599-yellow.glb",
+    name: "599",
+    kicker: "Yellow · V12",
+    tagline: ["Raw.", "Pure.", "Unfiltered."],
+    desc: "A front-engined V12 built around one idea: nothing between you and the road.",
+    specs: [
+      { val: "620 CV", label: "Power" },
+      { val: "V12", label: "Engine" },
+      { val: "3.3 S", label: "0 – 100" },
+      { val: "RWD", label: "Drive" },
+    ],
+    colors: [S.giallo, S.rosso, S.nero, S.grigio, S.bianco],
+  },
+  {
+    id: "521-yellow",
+    file: "521-yellow.glb",
+    name: "521",
+    kicker: "Yellow · Coupé",
+    tagline: ["Sculpted", "for speed."],
+    desc: "Proportions drawn by the wind tunnel, finished by hand in Maranello.",
+    specs: [
+      { val: "560 CV", label: "Power" },
+      { val: "V8", label: "Engine" },
+      { val: "3.6 S", label: "0 – 100" },
+      { val: "RWD", label: "Drive" },
+    ],
+    colors: [S.giallo, S.rosso, S.blu, S.bianco, S.nero],
+  },
+  {
+    id: "gray-2020",
+    file: "gray-2020.glb",
+    name: "GRAY",
+    kicker: "2020 · Edition",
+    tagline: ["Quiet", "menace."],
+    desc: "Understated on the surface. Everything underneath is pure competition.",
+    specs: [
+      { val: "720 CV", label: "Power" },
+      { val: "V8", label: "Engine" },
+      { val: "2.9 S", label: "0 – 100" },
+      { val: "RWD", label: "Drive" },
+    ],
+    colors: [S.grigio, S.nero, S.rosso, S.bianco, S.verde],
+  },
+  {
+    id: "red-1996",
+    file: "red-1996.glb",
+    name: "1996",
+    kicker: "Rosso · Classic",
+    tagline: ["Pure", "emotion."],
+    desc: "Analogue, loud and unapologetic. The reason people fall in love with cars.",
+    specs: [
+      { val: "520 CV", label: "Power" },
+      { val: "V12", label: "Engine" },
+      { val: "3.8 S", label: "0 – 100" },
+      { val: "RWD", label: "Drive" },
+    ],
+    colors: [S.rosso, S.giallo, S.nero, S.bianco, S.blu],
+  },
+  {
+    id: "yellow-2020",
+    file: "yellow-2020.glb",
+    name: "2020",
+    kicker: "Giallo · Edition",
+    tagline: ["Power,", "refined."],
+    desc: "Modena yellow, modern engineering. The brand's past and future in one body.",
+    specs: [
+      { val: "780 CV", label: "Power" },
+      { val: "V12", label: "Engine" },
+      { val: "2.9 S", label: "0 – 100" },
+      { val: "RWD", label: "Drive" },
+    ],
+    colors: [S.giallo, S.rosso, S.grigio, S.nero, S.bianco],
+  },
+];
+
+--------- src/components/sections/Intro.jsx ---------
+import { useRef } from "react";
+import useScrollProgress from "../../hooks/useScrollProgress";
+import "./story.css";
+
+const WORDS = [
+  "We",
+  "don't",
+  "build",
+  "cars.",
+  "We",
+  "build",
+  "the",
+  "feeling",
+  "before",
+  "you",
+  "arrive.",
+];
+const ACCENT = new Set(["feeling"]);
+
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+
+export default function Intro() {
+  const sec = useRef(null);
+  const curve = useRef(null);
+  const rail = useRef(null);
+  const words = useRef([]);
+
+  useScrollProgress(sec, (p, r) => {
+    // the curtain pulls taut as it rises to the top of the screen
+    if (curve.current) {
+      const t = clamp01(r.top / (window.innerHeight * 0.9));
+      curve.current.style.transform = `scaleY(${t.toFixed(3)})`;
+    }
+
+    // word-by-word reveal
+    const START = 0.08;
+    const END = 0.82;
+    const f = clamp01((p - START) / (END - START)) * WORDS.length;
+    words.current.forEach((el, i) => {
+      if (!el) return;
+      const o = clamp01(f - i);
+      el.style.opacity = (0.14 + 0.86 * o).toFixed(3);
+      el.style.transform = `translateY(${((1 - o) * 0.3).toFixed(3)}em)`;
+    });
+
+    if (rail.current) rail.current.style.transform = `scaleY(${p.toFixed(3)})`;
+  });
+
+  return (
+    <section className="story intro" id="intro" ref={sec} data-nav="light">
+      <div className="intro-curve" ref={curve} />
+
+      <div className="intro-stage">
+        <div className="intro-top">
+          <span className="story-label">( 01 ) — The Philosophy</span>
+          <span className="story-label">Scroll</span>
+        </div>
+
+        <p className="intro-text">
+          {WORDS.map((w, i) => (
+            <span
+              key={i}
+              className={`intro-word${ACCENT.has(w) ? " is-accent" : ""}`}
+              ref={(el) => (words.current[i] = el)}
+            >
+              {w}
+            </span>
+          ))}
+        </p>
+
+        <div className="intro-rail">
+          <i ref={rail} />
+        </div>
+
+        <div className="intro-bottom">
+          <span className="story-label">Maranello, Italia</span>
+          <span className="story-label">44°31′N — 10°51′E</span>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+--------- src/components/sections/Cinematic.jsx ---------
+import { useEffect, useRef, useState } from "react";
+import useScrollProgress from "../../hooks/useScrollProgress";
+import "./story.css";
+
+const VIDEO = "/video/reel.mp4";
+const POSTER = "/video/poster.jpg";
+
+const CAPS = [
+  { from: 0.6, to: 0.8, text: "Speed is a language." },
+  { from: 0.76, to: 0.94, text: "Every curve, a decision." },
+  { from: 0.9, to: 1.01, text: "Maranello, after dark." },
+];
+
+const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const smooth = (a, b, x) => {
+  const t = clamp01((x - a) / (b - a));
+  return t * t * (3 - 2 * t);
+};
+const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+const mmss = (s) =>
+  `${String(Math.floor(s / 60)).padStart(2, "0")}:${String(Math.floor(s % 60)).padStart(2, "0")}`;
+
+export default function Cinematic() {
+  const sec = useRef(null);
+  const win = useRef(null);
+  const shade = useRef(null);
+  const metaL = useRef(null);
+  const vid = useRef(null);
+  const timeEl = useRef(null);
+  const caps = useRef([]);
+  const [ready, setReady] = useState(false);
+
+  useScrollProgress(sec, (p) => {
+    const W = window.innerWidth;
+    const startScale = W < 700 ? 0.72 : 0.3;
+
+    // hold, then grow to full-bleed (transform only = GPU, no repaint)
+    const e = ease(clamp01((p - 0.1) / 0.5));
+    const s = startScale + (1 - startScale) * e;
+    if (win.current)
+      win.current.style.transform = `scale(${s.toFixed(4)}) translateZ(0)`;
+    if (shade.current) shade.current.style.opacity = e.toFixed(3);
+    if (metaL.current)
+      metaL.current.style.opacity = (1 - smooth(0.1, 0.3, p)).toFixed(3);
+
+    CAPS.forEach((c, i) => {
+      const el = caps.current[i];
+      if (!el) return;
+      const inn = smooth(c.from, c.from + 0.05, p);
+      const out = 1 - smooth(c.to - 0.05, c.to, p);
+      const o = Math.min(inn, out);
+      el.style.opacity = o.toFixed(3);
+      el.style.transform = `translateY(${((1 - inn) * 30 - (1 - out) * 30).toFixed(1)}px)`;
+      el.style.visibility = o <= 0.001 ? "hidden" : "visible";
+    });
+  });
+
+  // play only while on screen + live timecode (only ticks while playing)
+  useEffect(() => {
+    const v = vid.current;
+    const el = sec.current;
+    if (!v || !el) return;
+    v.muted = true;
+
+    let timer = null;
+    const startClock = () => {
+      if (timer) return;
+      timer = setInterval(() => {
+        if (!timeEl.current) return;
+        const d = isFinite(v.duration) ? v.duration : 0;
+        timeEl.current.textContent = `${mmss(v.currentTime)} / ${mmss(d)}`;
+      }, 250);
+    };
+    const stopClock = () => {
+      clearInterval(timer);
+      timer = null;
+    };
+
+    const io = new IntersectionObserver(
+      ([entry]) => {
+        if (entry.isIntersecting) {
+          v.play().catch(() => {});
+          startClock();
+        } else {
+          v.pause();
+          stopClock();
+        }
+      },
+      { threshold: 0.01 },
+    );
+    io.observe(el);
+
+    return () => {
+      io.disconnect();
+      stopClock();
+    };
+  }, []);
+
+  return (
+    <section className="story film" id="film" ref={sec} data-nav="light">
+      <div className="film-stage">
+        <div className="film-window" ref={win}>
+          {!ready && (
+            <div className="film-fallback">
+              <span>Loading reel…</span>
+            </div>
+          )}
+          <video
+            ref={vid}
+            className="film-video"
+            src={VIDEO}
+            poster={POSTER}
+            muted
+            loop
+            playsInline
+            preload="auto"
+            disablePictureInPicture
+            disableRemotePlayback
+            onLoadedData={() => setReady(true)}
+            onError={(e) => (e.currentTarget.style.display = "none")}
+          />
+          <div className="film-shade" ref={shade} />
+        </div>
+
+        <div className="film-caps">
+          {CAPS.map((c, i) => (
+            <h3
+              className="film-cap"
+              key={c.text}
+              ref={(el) => (caps.current[i] = el)}
+            >
+              {c.text}
+            </h3>
+          ))}
+        </div>
+
+        <div className="film-meta">
+          <div className="film-meta-left" ref={metaL}>
+            <span className="story-label">( 02 ) — The Film</span>
+            <span className="story-label">Keep scrolling</span>
+          </div>
+          <span className="story-label film-time" ref={timeEl}>
+            00:00 / 00:00
+          </span>
+        </div>
+      </div>
+    </section>
+  );
+}

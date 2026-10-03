@@ -1,0 +1,275 @@
+]633;E;{ echo "=============== PROJECT STRUCTURE ==============="\x3b find . -type f   -not -path "*/node_modules/*"   -not -path "*/.git/*"   -not -path "*/dist/*"   -not -path "*/build/*"   -not -path "*/.next/*"   -not -name "package-lock.json"   -not -name "yarn.lock"   -not -name "pnpm-lock.yaml"   -not -name ".env*"   | sort\x3b  echo ""\x3b echo "=============== PACKAGE.JSON ==============="\x3b cat package.json 2>/dev/null\x3b  echo ""\x3b echo "=============== CONFIG FILES ==============="\x3b for f in vite.config.* next.config.* tailwind.config.* postcss.config.* tsconfig.json jsconfig.json index.html\x3b do   if [ -f "$f" ]\x3b then     echo ""\x3b     echo "--------- $f ---------"\x3b     cat "$f"\x3b   fi\x3b done\x3b  echo ""\x3b echo "=============== ENTRY FILES ==============="\x3b for f in src/main.* src/index.* src/App.* app/layout.* app/page.*\x3b do   if [ -f "$f" ]\x3b then     echo ""\x3b     echo "--------- $f ---------"\x3b     cat "$f"\x3b   fi\x3b done\x3b  echo ""\x3b echo "=============== LINE COUNTS (src) ==============="\x3b find src -type f \\( -name "*.jsx" -o -name "*.js" -o -name "*.tsx" -o -name "*.ts" -o -name "*.css" -o -name "*.scss" \\)   -exec wc -l {} + 2>/dev/null | sort -n\x3b  echo ""\x3b echo "=============== ASSETS (names + sizes) ==============="\x3b find . -type f \\( -name "*.glb" -o -name "*.gltf" -o -name "*.mp4" -o -name "*.webm" -o -name "*.webp" -o -name "*.png" -o -name "*.jpg" -o -name "*.jpeg" -o -name "*.svg" -o -name "*.woff*" -o -name "*.ttf" \\)   -not -path "*/node_modules/*" -not -path "*/.git/*"   -exec du -h {} + 2>/dev/null | sort -h\x3b } > project-overview.txt;51594b7a-f80c-4362-be88-7f07afad84ac]633;C=============== PROJECT STRUCTURE ===============
+./.gitignore
+./eslint.config.js
+./filetree.txt
+./index.html
+./package.json
+./postcss.config.js
+./project-overview.txt
+./public/draco/draco_decoder.js
+./public/draco/draco_decoder.wasm
+./public/draco/draco_encoder.js
+./public/draco/draco_wasm_wrapper.js
+./public/fonts/BebasNeue-Regular.ttf
+./public/fonts/Syncopate-Bold.ttf
+./public/models/ferrari.glb
+./public/models/showcase/521-yellow.glb
+./public/models/showcase/599-yellow.glb
+./public/models/showcase/gray-2020.glb
+./public/models/showcase/podium.glb
+./public/models/showcase/red-1996.glb
+./public/models/showcase/yellow-2020.glb
+./public/video/poster.jpg
+./public/video/reel.mp4
+./README.md
+./src/App.jsx
+./src/assets/ferrariLogoPath.js
+./src/assets/icons/ferrari-logo.svg
+./src/assets/icons/ferrari-logo-bg.svg
+./src/components/canvas/CarModel.jsx
+./src/components/canvas/carTrack.js
+./src/components/canvas/GroundPlane.jsx
+./src/components/canvas/HeroText.jsx
+./src/components/canvas/Scene.jsx
+./src/components/hero.css
+./src/components/HeroOverlay.jsx
+./src/components/HeroTelemetry.jsx
+./src/components/Navbar.jsx
+./src/components/sections/Cinematic.jsx
+./src/components/sections/Configurator.jsx
+./src/components/sections/CTA.jsx
+./src/components/sections/Heritage.jsx
+./src/components/sections/Hero.jsx
+./src/components/sections/Intro.jsx
+./src/components/sections/ModelShowcase.jsx
+./src/components/sections/Preloader.jsx
+./src/components/sections/showcase.css
+./src/components/sections/Specs.jsx
+./src/components/sections/story.css
+./src/components/showcase/colors.js
+./src/components/showcase/loadGLB.js
+./src/components/showcase/prepareCar.js
+./src/components/showcase/ShowStage.jsx
+./src/components/ui/ErrorBoundary.jsx
+./src/components/ui/FerrariLogo.jsx
+./src/components/ui/Navbar.jsx
+./src/data/cars.js
+./src/data/showcase.js
+./src/hooks/useLenis.js
+./src/hooks/useScrollProgress.js
+./src/index.css
+./src/main.jsx
+./src/store/useStore.js
+./tailwind.config.js
+./vite.config.js
+
+=============== PACKAGE.JSON ===============
+{
+  "name": "fera",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "lint": "eslint .",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.1",
+    "@react-three/postprocessing": "^3.1.3",
+    "gsap": "^3.15.0",
+    "lenis": "^1.3.26",
+    "react": "^19.2.8",
+    "react-dom": "^19.2.8",
+    "split-type": "^0.3.4",
+    "three": "^0.182.0",
+    "zustand": "^5.0.15"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/react": "^19.2.18",
+    "@types/react-dom": "^19.2.7",
+    "@vitejs/plugin-react": "^6.1.1",
+    "autoprefixer": "^10.6.1",
+    "eslint": "^10.10.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.6",
+    "globals": "^17.12.0",
+    "postcss": "^8.5.28",
+    "tailwindcss": "^3.4.19",
+    "vite": "^8.3.0"
+  }
+}
+
+=============== CONFIG FILES ===============
+
+--------- vite.config.js ---------
+import react from '@vitejs/plugin-react'
+import { defineConfig } from 'vite'
+
+// https://vite.dev/config/
+export default defineConfig({
+  plugins: [react()],
+})
+
+--------- tailwind.config.js ---------
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {},
+  },
+  plugins: [],
+};
+
+--------- postcss.config.js ---------
+export default {
+  plugins: {
+    tailwindcss: {},
+    autoprefixer: {},
+  },
+}
+
+--------- index.html ---------
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>fera</title>
+  </head>
+  <body>
+    <div id="root"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>
+
+=============== ENTRY FILES ===============
+
+--------- src/main.jsx ---------
+import { StrictMode } from 'react'
+import { createRoot } from 'react-dom/client'
+import './index.css'
+import App from './App.jsx'
+
+createRoot(document.getElementById('root')).render(
+  <StrictMode>
+    <App />
+  </StrictMode>,
+)
+
+--------- src/index.css ---------
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+/* hide scrollbar, scrolling still works */
+html,
+body {
+  scrollbar-width: none; /* Firefox */
+  -ms-overflow-style: none; /* old Edge */
+}
+html::-webkit-scrollbar,
+body::-webkit-scrollbar {
+  display: none; /* Chrome, Safari, Edge */
+  width: 0;
+  height: 0;
+}
+--------- src/App.jsx ---------
+import useLenis from "./hooks/useLenis";
+import useStore from "./store/useStore";
+import Preloader from "./components/sections/Preloader";
+import Navbar from "./components/ui/Navbar";
+import Hero from "./components/sections/Hero";
+import Intro from "./components/sections/Intro";
+import Cinematic from "./components/sections/Cinematic";
+import ModelShowcase from "./components/sections/ModelShowcase";
+import Specs from "./components/sections/Specs";
+import Heritage from "./components/sections/Heritage";
+import CTA from "./components/sections/CTA";
+
+function App() {
+  const isLoading = useStore((state) => state.isLoading);
+  useLenis(isLoading);
+
+  return (
+    <>
+      {isLoading && <Preloader />}
+      <Navbar />
+      <main>
+        <Hero />
+        <Intro />
+        <Cinematic />
+        <ModelShowcase />
+        <Specs />
+        <Heritage />
+        <CTA />
+      </main>
+    </>
+  );
+}
+
+export default App;
+
+=============== LINE COUNTS (src) ===============
+     9 src/components/canvas/carTrack.js
+     9 src/components/sections/Configurator.jsx
+     9 src/components/sections/CTA.jsx
+     9 src/components/sections/Heritage.jsx
+     9 src/components/sections/Specs.jsx
+    10 src/main.jsx
+    14 src/store/useStore.js
+    15 src/components/canvas/GroundPlane.jsx
+    16 src/index.css
+    22 src/assets/ferrariLogoPath.js
+    28 src/components/showcase/loadGLB.js
+    28 src/components/ui/ErrorBoundary.jsx
+    34 src/App.jsx
+    35 src/components/ui/FerrariLogo.jsx
+    39 src/hooks/useScrollProgress.js
+    41 src/hooks/useLenis.js
+    47 src/components/showcase/colors.js
+    48 src/data/cars.js
+    78 src/components/sections/Hero.jsx
+    82 src/components/sections/Intro.jsx
+    95 src/data/showcase.js
+    98 src/components/canvas/Scene.jsx
+   103 src/components/ui/Navbar.jsx
+   108 src/components/HeroOverlay.jsx
+   128 src/components/sections/Preloader.jsx
+   130 src/components/Navbar.jsx
+   149 src/components/sections/Cinematic.jsx
+   155 src/components/HeroTelemetry.jsx
+   164 src/components/canvas/HeroText.jsx
+   195 src/components/sections/story.css
+   249 src/components/showcase/prepareCar.js
+   282 src/components/sections/ModelShowcase.jsx
+   365 src/components/sections/showcase.css
+   448 src/components/showcase/ShowStage.jsx
+   478 src/components/canvas/CarModel.jsx
+   549 src/components/hero.css
+  4278 total
+
+=============== ASSETS (names + sizes) ===============
+20K	./src/assets/icons/ferrari-logo.svg
+20K	./src/assets/icons/ferrari-logo-bg.svg
+28K	./public/models/showcase/podium.glb
+44K	./dist/fonts/Syncopate-Bold.ttf
+44K	./public/fonts/Syncopate-Bold.ttf
+60K	./dist/fonts/BebasNeue-Regular.ttf
+60K	./public/fonts/BebasNeue-Regular.ttf
+72K	./dist/video/poster.jpg
+72K	./public/video/poster.jpg
+5.8M	./dist/video/reel.mp4
+5.8M	./public/video/reel.mp4
+11M	./public/models/showcase/yellow-2020.glb
+13M	./public/models/showcase/gray-2020.glb
+16M	./public/models/showcase/red-1996.glb
+28M	./dist/models/ferrari.glb
+28M	./public/models/ferrari.glb
+44M	./public/models/showcase/521-yellow.glb
+54M	./public/models/showcase/599-yellow.glb
