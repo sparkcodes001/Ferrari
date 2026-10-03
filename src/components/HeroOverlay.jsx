@@ -1,5 +1,6 @@
 import { useEffect, useRef } from "react";
 import "./hero.css";
+import { scrollToTarget } from "../hooks/useLenis";
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -43,9 +44,7 @@ export default function HeroOverlay({
             href="#models"
             onClick={(e) => {
               e.preventDefault();
-              document
-                .getElementById("models")
-                ?.scrollIntoView({ behavior: "smooth" });
+              scrollToTarget("#models");
             }}
           >
             <span>Explore Models</span>

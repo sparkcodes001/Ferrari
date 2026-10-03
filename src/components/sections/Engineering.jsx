@@ -4,8 +4,8 @@ import { Environment, Grid, ContactShadows } from "@react-three/drei";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import SectionHeader from "../ui/SectionHeader";
-import EngineeringCar from "../../canvas/EngineeringCar";
-import { STAGES, getStageIndex } from "../../canvas/explodeConfig";
+import EngineeringCar from "../canvas/EngineeringCar";
+import { STAGES, getStageIndex } from "../canvas/explodeConfig";
 import useInView from "../../hooks/useInView";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -71,6 +71,7 @@ function Engineering() {
   return (
     <section
       ref={sectionRef}
+      id="models"
       data-nav="light"
       className="relative h-screen w-full overflow-hidden bg-black"
     >

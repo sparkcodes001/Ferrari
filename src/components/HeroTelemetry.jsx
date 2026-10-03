@@ -1,8 +1,6 @@
 import { useEffect, useRef } from "react";
 import "./hero.css";
-
-/* Must match CarModel.jsx → SCROLL_VIEWPORTS */
-const SCROLL_VIEWPORTS = 1.5;
+import { HERO_SCROLL_VIEWPORTS } from "../config/scroll";
 /* Speed at which the readout hits the car's top speed (progress per second) */
 const FULL_SPEED_AT = 0.55;
 const GEARS = 7;
@@ -51,7 +49,7 @@ export default function HeroTelemetry({ car }) {
 
     const onScroll = () => {
       target = clamp01(
-        window.scrollY / (window.innerHeight * SCROLL_VIEWPORTS),
+        window.scrollY / (window.innerHeight * HERO_SCROLL_VIEWPORTS),
       );
     };
     window.addEventListener("scroll", onScroll, { passive: true });

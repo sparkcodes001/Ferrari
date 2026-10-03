@@ -4,37 +4,10 @@ import { useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { useFrame } from "@react-three/fiber";
 import * as THREE from "three";
 import { carTrack } from "./carTrack";
+import { HOVER_EXPLODE_MAP, safeName } from "./explodeConfig";
+import { HERO_SCROLL_VIEWPORTS } from "../../config/scroll";
 import useStore from "../../store/useStore";// ← add this line
 
-/* ───────────── Hover explode offsets ───────────── */
-const EXPLODE_MAP = [
-  { name: "Tire.001_22", offset: [-0.7, 0.05, -0.35] },
-  { name: "Tire.002_26", offset: [-0.7, 0.05, 0.35] },
-  { name: "Tire.003_30", offset: [0.7, 0.05, -0.35] },
-  { name: "Tire.004_34", offset: [0.7, 0.05, 0.35] },
-
-  { name: "Rims_21", offset: [-0.35, 0, 0] },
-  { name: "Rims.002_25", offset: [-0.35, 0, 0] },
-  { name: "Rims.001_29", offset: [0.35, 0, 0] },
-  { name: "Rims.003_33", offset: [0.35, 0, 0] },
-
-  { name: "Brake_19", offset: [0.2, 0, 0] },
-  { name: "Brake.001_23", offset: [0.2, 0, 0] },
-  { name: "Brake.002_27", offset: [-0.2, 0, 0] },
-  { name: "Brake.003_31", offset: [-0.2, 0, 0] },
-
-  { name: "Headlights_17", offset: [0, 0.15, -0.7] },
-  { name: "Mirror_16", offset: [0, 0.55, 0] },
-  { name: "GlassMain_14", offset: [0, 0.9, 0] },
-  { name: "GlassBack_18", offset: [0, 0.7, 0.35] },
-  { name: "GlassOther_3", offset: [0, 0.5, 0] },
-  { name: "RearLight_7", offset: [0, 0.12, 0.55] },
-  { name: "RedGlass_15", offset: [0, 0.12, 0.7] },
-  { name: "Logos_5", offset: [0, 0.35, -0.15] },
-  { name: "Grid_4", offset: [0, -0.15, -0.45] },
-  { name: "Mechanics_6", offset: [0, -0.55, 0] },
-  { name: "Springs_8", offset: [0, -0.4, 0] },
-];
 
 /* ───────────── Drive / wheel settings ───────────── */
 const WHEELS = {
@@ -45,7 +18,6 @@ const WHEELS = {
 };
 const DRIVE_DISTANCE = 14;
 const DIR = 1;
-const SCROLL_VIEWPORTS = 1.5;
 const KEEP_CALIPERS_STILL = true;
 
 /* ───────────── Paint settings ───────────── */
@@ -61,7 +33,6 @@ const PAINT_GLOW = 1.4; // brightness of the glowing leading edge
 const PAINT_SOFTNESS = 0.16; // edge softness as a fraction of car length
 
 /* ───────────── Helpers ───────────── */
-const safe = (name) => THREE.PropertyBinding.sanitizeNodeName(name);
 const easeInOutQuart = (t) =>
   t < 0.5 ? 8 * t * t * t * t : 1 - Math.pow(-2 * t + 2, 4) / 2;
 
@@ -172,9 +143,9 @@ function patchPaint(U) {
 function buildWheelRig(scene) {
   const tires = {};
   for (const [key, name] of Object.entries(WHEELS)) {
-    const node = scene.getObjectByName(safe(name));
+    const node = scene.getObjectByName(safeName(name));
     if (!node) {
-      console.warn("[Wheels] missing node:", name, "→", safe(name));
+      console.warn("[Wheels] missing node:", name, "→", safeName(name));
       return null;
     }
     tires[key] = node;
@@ -238,10 +209,13 @@ function CarModel({ url = "/models/ferrari.glb", paint = null, ...props }) {
     t: 1,
   });
 
+  // never leave a stuck pointer cursor behind if we unmount while hovered
+  useEffect(() => () => { document.body.style.cursor = "auto"; }, []);
+
   useEffect(() => {
     const onScroll = () => {
       scrollTarget.current = THREE.MathUtils.clamp(
-        window.scrollY / (window.innerHeight * SCROLL_VIEWPORTS),
+        window.scrollY / (window.innerHeight * HERO_SCROLL_VIEWPORTS),
         0,
         1,
       );
@@ -271,14 +245,14 @@ function CarModel({ url = "/models/ferrari.glb", paint = null, ...props }) {
       }
     });
 
-    partsRef.current = EXPLODE_MAP.map((entry) => {
-      const node = scene.getObjectByName(safe(entry.name));
+    partsRef.current = HOVER_EXPLODE_MAP.map((entry) => {
+      const node = scene.getObjectByName(safeName(entry.name));
       if (!node) {
         console.warn(
           "[Explode] missing node:",
           entry.name,
           "→",
-          safe(entry.name),
+          safeName(entry.name),
         );
         return null;
       }

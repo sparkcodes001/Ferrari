@@ -3,7 +3,7 @@ import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { EXPLODE_MAP, safeName } from "./explodeConfig";
-import { cloneScene } from "../utils/cloneScene";
+import { cloneScene } from "../../utils/cloneScene";
 
 const smoothstep = (e0, e1, x) => {
   const t = THREE.MathUtils.clamp((x - e0) / (e1 - e0), 0, 1);

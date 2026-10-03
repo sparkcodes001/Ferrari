@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import "../hero.css";
+import { scrollToTarget } from "../../hooks/useLenis";
 
 const LINKS = [
   { label: "Home", href: "#top" },
   { label: "Models", href: "#models" },
-  { label: "Configure", href: "#configure" },
+  { label: "Specs", href: "#specs" },
   { label: "Heritage", href: "#heritage" },
 ];
 
@@ -12,7 +13,7 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [light, setLight] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const heroHeight = useRef(Infinity); // never hide until this is measured
+  const heroHeight = useRef(Infinity); // stays Infinity (never hide) until measured below
 
   // Esc closes the menu, body scroll is locked while it's open
   useEffect(() => {
@@ -58,28 +59,15 @@ export default function Navbar() {
     };
   }, []);
 
-  // flip color scheme when a dark (data-nav="light") section is under the bar
-  useEffect(() => {
-    const sections = document.querySelectorAll("[data-nav]");
-    if (!sections.length) return;
-
-    const io = new IntersectionObserver(
-      (entries) => {
-        entries.forEach((entry) => {
-          if (entry.isIntersecting) {
-            setLight(entry.target.dataset.nav === "light");
-          }
-        });
-      },
-      { rootMargin: "-80px 0px -98% 0px", threshold: 0 },
-    );
-
-    sections.forEach((s) => io.observe(s));
-    return () => io.disconnect();
-  }, []);
-
   // hide on scroll down, reveal on scroll up — only AFTER the Hero ends
   useEffect(() => {
+    const measure = () => {
+      const hero = document.getElementById("top");
+      if (hero) heroHeight.current = hero.offsetHeight;
+    };
+    measure();
+    window.addEventListener("resize", measure);
+
     let lastY = window.scrollY;
     let ticking = false;
 
@@ -104,7 +92,10 @@ export default function Navbar() {
     };
 
     window.addEventListener("scroll", onScroll, { passive: true });
-    return () => window.removeEventListener("scroll", onScroll);
+    return () => {
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", measure);
+    };
   }, []);
 
   const go = useCallback(
@@ -114,13 +105,7 @@ export default function Navbar() {
       setOpen(false);
       setTimeout(
         () => {
-          if (href === "#top") {
-            window.scrollTo({ top: 0, behavior: "smooth" });
-          } else {
-            document
-              .querySelector(href)
-              ?.scrollIntoView({ behavior: "smooth" });
-          }
+          scrollToTarget(href === "#top" ? 0 : href);
         },
         wasOpen ? 500 : 0,
       );

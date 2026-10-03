@@ -18,7 +18,7 @@ export const CARS = [
   {
     id: "green",
     paint: "#1b8a55",
-    theme: ["#7fc79a", "#4ea574", "#43DA46FF"],
+    theme: ["#7fc79a", "#4ea574", "#2f7d52"],
     tagline: "Born on the track",
     specs: [
       { val: "V12", lines: ["6.5 L", "800 CV"] },

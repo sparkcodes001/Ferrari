@@ -24,6 +24,8 @@ function Letter({ char, index, x, onMeasure }) {
   const inkRef = useRef([0, 0]);
   const [hovered, setHovered] = useState(false);
 
+  useEffect(() => () => { document.body.style.cursor = "auto"; }, []);
+
   useEffect(() => {
     if (meshRef.current?.material)
       meshRef.current.material.color.copy(BASE_COLOR);

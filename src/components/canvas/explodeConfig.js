@@ -3,6 +3,7 @@ import * as THREE from "three";
 // three.js strips "." from node names on import: "Tire.001_22" -> "Tire001_22"
 export const safeName = (name) => THREE.PropertyBinding.sanitizeNodeName(name);
 
+/* Engineering section: full scroll-driven disassembly */
 export const EXPLODE_MAP = [
   { name: "GlassMain_14", offset: [0, 1.3, 0], range: [0.04, 0.3] },
   { name: "GlassBack_18", offset: [0, 1.0, 0.5], range: [0.04, 0.3] },
@@ -51,3 +52,33 @@ export function getStageIndex(progress) {
   }
   return 0;
 }
+
+/* ───────────── Hero hover-explode offsets (small) ───────────── */
+export const HOVER_EXPLODE_MAP = [
+  { name: "Tire.001_22", offset: [-0.7, 0.05, -0.35] },
+  { name: "Tire.002_26", offset: [-0.7, 0.05, 0.35] },
+  { name: "Tire.003_30", offset: [0.7, 0.05, -0.35] },
+  { name: "Tire.004_34", offset: [0.7, 0.05, 0.35] },
+
+  { name: "Rims_21", offset: [-0.35, 0, 0] },
+  { name: "Rims.002_25", offset: [-0.35, 0, 0] },
+  { name: "Rims.001_29", offset: [0.35, 0, 0] },
+  { name: "Rims.003_33", offset: [0.35, 0, 0] },
+
+  { name: "Brake_19", offset: [0.2, 0, 0] },
+  { name: "Brake.001_23", offset: [0.2, 0, 0] },
+  { name: "Brake.002_27", offset: [-0.2, 0, 0] },
+  { name: "Brake.003_31", offset: [-0.2, 0, 0] },
+
+  { name: "Headlights_17", offset: [0, 0.15, -0.7] },
+  { name: "Mirror_16", offset: [0, 0.55, 0] },
+  { name: "GlassMain_14", offset: [0, 0.9, 0] },
+  { name: "GlassBack_18", offset: [0, 0.7, 0.35] },
+  { name: "GlassOther_3", offset: [0, 0.5, 0] },
+  { name: "RearLight_7", offset: [0, 0.12, 0.55] },
+  { name: "RedGlass_15", offset: [0, 0.12, 0.7] },
+  { name: "Logos_5", offset: [0, 0.35, -0.15] },
+  { name: "Grid_4", offset: [0, -0.15, -0.45] },
+  { name: "Mechanics_6", offset: [0, -0.55, 0] },
+  { name: "Springs_8", offset: [0, -0.4, 0] },
+];
