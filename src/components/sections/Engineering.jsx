@@ -5,7 +5,8 @@ import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import SectionHeader from "../ui/SectionHeader";
 import EngineeringCar from "../canvas/EngineeringCar";
-import { STAGES, getStageIndex } from "../canvas/explodeConfig";
+import { STAGES, HOTSPOTS, getStageIndex } from "../canvas/explodeConfig";
+import "./engineering.css";
 import useInView from "../../hooks/useInView";
 
 gsap.registerPlugin(ScrollTrigger);
@@ -17,6 +18,7 @@ function Engineering() {
   const titleRef = useRef(null);
   const subRef = useRef(null);
   const dotsRef = useRef([]);
+  const hotspotsRef = useRef([]);
   const activeStage = useRef(-1);
   const [canvasRef, inView] = useInView();
 
@@ -124,7 +126,11 @@ function Engineering() {
           far={4}
         />
 
-        <EngineeringCar progressRef={progressRef} position={[0, -0.3, 0]} />
+        <EngineeringCar
+          progressRef={progressRef}
+          hotspotsRef={hotspotsRef}
+          position={[0, -0.3, 0]}
+        />
       </Canvas>
 
       <div
@@ -135,6 +141,23 @@ function Engineering() {
         }}
       />
       <div className="pointer-events-none absolute inset-x-0 top-0 z-20 h-40 bg-gradient-to-b from-black/80 to-transparent" />
+
+      {HOTSPOTS.map((h, i) => (
+        <div
+          key={h.node}
+          className="hs"
+          data-side={h.side}
+          ref={(el) => (hotspotsRef.current[i] = el)}
+          aria-hidden="true"
+        >
+          <i className="hs-dot" />
+          <span className="hs-line" />
+          <p className="hs-text">
+            <b>{h.title}</b>
+            <small>{h.sub}</small>
+          </p>
+        </div>
+      ))}
 
       <SectionHeader
         index={2}

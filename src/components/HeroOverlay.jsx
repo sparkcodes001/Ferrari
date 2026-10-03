@@ -1,4 +1,7 @@
 import { useEffect, useRef } from "react";
+import gsap from "gsap";
+import SplitType from "split-type";
+import useStore from "../store/useStore";
 import "./hero.css";
 import { scrollToTarget } from "../hooks/useLenis";
 
@@ -12,6 +15,43 @@ export default function HeroOverlay({
   onSelect,
 }) {
   const fadeRef = useRef(null);
+  const copyRef = useRef(null);
+  const splitRef = useRef(null);
+  const revealed = useStore((s) => s.revealed);
+
+  // hide the headline letters until the preloader lifts
+  useEffect(() => {
+    const el = copyRef.current;
+    if (!el) return;
+    const eyebrow = el.querySelector(".ho-eyebrow");
+    const title = el.querySelector(".ho-title");
+    const rest = el.querySelectorAll(".ho-sub, .ho-cta");
+    const split = new SplitType([eyebrow, title], {
+      types: "lines,words,chars",
+      tagName: "span",
+    });
+    gsap.set(split.chars, { yPercent: 115 });
+    gsap.set(rest, { opacity: 0, y: 18 });
+    splitRef.current = { split, eyebrow, title, rest };
+    return () => {
+      split.revert();
+      gsap.set(rest, { clearProps: "opacity,transform" });
+      splitRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    const h = splitRef.current;
+    if (!revealed || !h) return;
+    const eyebrowChars = h.split.chars.filter((c) => h.eyebrow.contains(c));
+    const titleChars = h.split.chars.filter((c) => h.title.contains(c));
+    const tl = gsap
+      .timeline({ defaults: { ease: "expo.out" } })
+      .to(eyebrowChars, { yPercent: 0, duration: 1.1, stagger: 0.02 }, 0.2)
+      .to(titleChars, { yPercent: 0, duration: 1.3, stagger: 0.035 }, 0.3)
+      .to(h.rest, { opacity: 1, y: 0, duration: 1, stagger: 0.12, ease: "power3.out" }, 0.8);
+    return () => tl.kill();
+  }, [revealed]);
 
   // copy + specs fade out as the car starts driving, and stop being clickable
   useEffect(() => {
@@ -31,7 +71,7 @@ export default function HeroOverlay({
   return (
     <div className="ho">
       <div className="ho-fade" ref={fadeRef}>
-        <div className="ho-copy">
+        <div className="ho-copy" ref={copyRef}>
           <p className="ho-eyebrow">The Art Of</p>
           <h2 className="ho-title">Performance.</h2>
           <p className="ho-sub">

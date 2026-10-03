@@ -556,3 +556,22 @@
   transform: translateY(-10px);
   pointer-events: none;
 }
+
+/* ───────── hero headline reveal (SplitType) ───────── */
+.ho-title .line,
+.ho-eyebrow .line {
+  display: block;
+  overflow: hidden;
+  padding-bottom: 0.12em;
+  margin-bottom: -0.12em;
+}
+.ho-title .word,
+.ho-eyebrow .word,
+.ho-title .char,
+.ho-eyebrow .char {
+  display: inline-block;
+}
+.ho-title .char,
+.ho-eyebrow .char {
+  will-change: transform;
+}

@@ -2,7 +2,7 @@ import { useGLTF } from "@react-three/drei";
 import { useLayoutEffect, useMemo, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
-import { EXPLODE_MAP, safeName } from "./explodeConfig";
+import { EXPLODE_MAP, HOTSPOTS, safeName } from "./explodeConfig";
 import { cloneScene } from "../../utils/cloneScene";
 
 const smoothstep = (e0, e1, x) => {
@@ -10,7 +10,10 @@ const smoothstep = (e0, e1, x) => {
   return t * t * (3 - 2 * t);
 };
 
-function EngineeringCar({ progressRef, ...props }) {
+const _box = new THREE.Box3();
+const _c = new THREE.Vector3();
+
+function EngineeringCar({ progressRef, hotspotsRef, ...props }) {
   const { scene } = useGLTF("/models/ferrari.glb");
 
   // Own, independent copy — this file and Hero's CarModel both load the
@@ -23,6 +26,7 @@ function EngineeringCar({ progressRef, ...props }) {
   const partsRef = useRef([]);
   const smoothed = useRef(0);
   const frame = useRef(null);
+  const hotNodes = useRef([]);
 
   useLayoutEffect(() => {
     cloned.traverse((node) => {
@@ -55,6 +59,15 @@ function EngineeringCar({ progressRef, ...props }) {
     }).filter(Boolean);
 
     partsRef.current = resolved;
+
+    hotNodes.current = HOTSPOTS.map((h, i) => {
+      const node = cloned.getObjectByName(safeName(h.node));
+      if (!node) {
+        console.warn("[Engineering] missing hotspot node:", h.node);
+        return null;
+      }
+      return { i, node, range: h.range };
+    }).filter(Boolean);
 
     // Bounding box from VISIBLE meshes only — ferrari.glb contains a hidden
     // ground plane + text mesh as top-level siblings of the car (leftover
@@ -120,6 +133,28 @@ function EngineeringCar({ progressRef, ...props }) {
 
     if (groupRef.current) {
       groupRef.current.rotation.y = THREE.MathUtils.degToRad(-18) + amount * 0.55;
+    }
+
+    // hotspot labels: project each part's centre to screen space
+    const els = hotspotsRef?.current;
+    if (els && groupRef.current && hotNodes.current.length) {
+      groupRef.current.updateMatrixWorld(true);
+      for (const h of hotNodes.current) {
+        const el = els[h.i];
+        if (!el) continue;
+        const a = smoothstep(h.range[0], h.range[0] + 0.05, amount);
+        const b = 1 - smoothstep(h.range[1] - 0.05, h.range[1], amount);
+        let vis = Math.min(a, b);
+        if (vis > 0.002) {
+          _box.setFromObject(h.node).getCenter(_c).project(camera);
+          if (_c.z > 1) vis = 0;
+          const x = (_c.x * 0.5 + 0.5) * size.width;
+          const y = (-_c.y * 0.5 + 0.5) * size.height;
+          el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0)`;
+        }
+        el.style.opacity = vis.toFixed(3);
+        el.style.visibility = vis <= 0.002 ? "hidden" : "visible";
+      }
     }
   });
 

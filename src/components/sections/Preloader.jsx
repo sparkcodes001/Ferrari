@@ -1,4 +1,3 @@
-// components/sections/Preloader.jsx
 import { useEffect, useRef } from "react";
 import gsap from "gsap";
 import useStore from "../../store/useStore";
@@ -7,12 +6,21 @@ import FerrariLogo from "../ui/FerrariLogo";
 import { strokeUnits, pad3 } from "../../utils/logoDraw";
 
 const MIN_TIME = 2.2;
+const TICKS = 48; // rev-counter segments
+const RED_ZONE = 10; // last segments glow red
+const STATUS = [
+  [0, "Initialising chassis"],
+  [30, "Warming tyres"],
+  [60, "Calibrating aero"],
+  [90, "Ignition"],
+];
 
 function Preloader() {
   const root = useRef(null);
   const outro = useRef(null);
   const markReady = useRef(() => {});
   const setIsLoading = useStore((s) => s.setIsLoading);
+  const setRevealed = useStore((s) => s.setRevealed);
   const ready = usePreloaderGate();
 
   useEffect(() => {
@@ -20,6 +28,9 @@ function Preloader() {
       const base = root.current.querySelector("[data-base]");
       const lit = root.current.querySelector("[data-lit]");
       const count = root.current.querySelector("[data-count]");
+      const status = root.current.querySelector("[data-status]");
+      const logo = root.current.querySelector("[data-logo]");
+      const ticks = gsap.utils.toArray("[data-tick]", root.current);
 
       gsap.utils.toArray(".ferrari-main, .ferrari-detail", base).forEach((p) =>
         gsap.set(p, {
@@ -50,6 +61,16 @@ function Preloader() {
       const render = () => {
         count.textContent = pad3(state.v);
         lit.style.clipPath = `inset(${100 - state.v}% 0% 0% 0%)`;
+
+        // rev-counter fills with the percentage
+        const n = Math.round((state.v / 100) * TICKS);
+        ticks.forEach((t, i) => {
+          t.style.opacity = i < n ? "1" : "0.15";
+        });
+
+        let label = STATUS[0][1];
+        for (const [at, txt] of STATUS) if (state.v >= at) label = txt;
+        if (status.textContent !== label) status.textContent = label;
       };
       render();
 
@@ -60,6 +81,9 @@ function Preloader() {
           duration: 0.35,
         })
         .to("[data-ui]", { opacity: 0, duration: 0.3 }, "+=0.15")
+        .to(logo, { scale: 1.14, duration: 1.1, ease: "expo.inOut" }, "<")
+        // cue the hero entrance the moment the curtain starts to lift
+        .call(() => setRevealed(true), null, "<0.1")
         .to(
           root.current,
           {
@@ -67,7 +91,7 @@ function Preloader() {
             duration: 0.9,
             ease: "expo.inOut",
           },
-          "<0.1",
+          "<",
         );
 
       // 0 → 90 over the minimum time, then wait for the hero, then 90 → 100
@@ -100,7 +124,7 @@ function Preloader() {
     }, root);
 
     return () => ctx.revert();
-  }, [setIsLoading]);
+  }, [setIsLoading, setRevealed]);
 
   useEffect(() => {
     if (ready) markReady.current();
@@ -112,7 +136,7 @@ function Preloader() {
       className="fixed inset-0 z-50 flex flex-col items-center justify-center gap-10 bg-black"
       style={{ clipPath: "inset(0% 0% 0% 0%)" }}
     >
-      <div className="relative h-48 w-48 md:h-72 md:w-72">
+      <div data-logo className="relative h-48 w-48 md:h-72 md:w-72">
         <div data-base className="absolute inset-0">
           <FerrariLogo className="h-full w-full" />
         </div>
@@ -130,6 +154,25 @@ function Preloader() {
           000
         </span>
         <span className="mb-1 text-lg text-red-500 md:text-2xl">%</span>
+      </div>
+
+      <div data-ui className="flex flex-col items-center gap-3">
+        <div className="flex items-end gap-[3px]">
+          {Array.from({ length: TICKS }, (_, i) => (
+            <span
+              key={i}
+              data-tick
+              className={i >= TICKS - RED_ZONE ? "bg-red-500" : "bg-white"}
+              style={{ width: 2, height: 8 + (i / TICKS) * 16, opacity: 0.15 }}
+            />
+          ))}
+        </div>
+        <span
+          data-status
+          className="font-mono text-[10px] uppercase tracking-[0.35em] text-white/50"
+        >
+          Initialising chassis
+        </span>
       </div>
 
       <div

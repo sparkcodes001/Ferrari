@@ -197,3 +197,45 @@
   visibility: hidden;
   will-change: opacity, transform;
 }
+
+/* ───────── intro upgrades ───────── */
+.intro-text { position: relative; z-index: 2; }
+.intro-word { position: relative; }
+.intro-word.is-accent::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: -0.04em;
+  height: 0.06em;
+  background: var(--yellow);
+  transform-origin: left;
+  transform: scaleX(var(--u, 0));
+}
+.intro-glow {
+  position: absolute;
+  top: 50%;
+  left: 0;
+  width: 60vw;
+  height: 60vw;
+  margin: -30vw 0 0 -30vw;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(247, 214, 78, 0.13), transparent 62%);
+  pointer-events: none;
+  will-change: transform;
+}
+.intro-marquee {
+  position: absolute;
+  left: 0;
+  bottom: 15vh;
+  z-index: 1;
+  white-space: nowrap;
+  pointer-events: none;
+  will-change: transform;
+  font-weight: 700;
+  font-size: clamp(70px, 11vw, 220px);
+  line-height: 1;
+  letter-spacing: -0.02em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(239, 234, 224, 0.1);
+}

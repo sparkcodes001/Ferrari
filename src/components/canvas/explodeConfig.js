@@ -82,3 +82,14 @@ export const HOVER_EXPLODE_MAP = [
   { name: "Mechanics_6", offset: [0, -0.55, 0] },
   { name: "Springs_8", offset: [0, -0.4, 0] },
 ];
+
+/* Engineering: labels that track a part as it separates.
+   range = scroll progress window in which the label is visible. */
+export const HOTSPOTS = [
+  { node: "GlassMain_14", title: "Canopy glass", sub: "Laminated safety glass", range: [0.16, 0.32], side: "r" },
+  { node: "Body_9", title: "Monocoque shell", sub: "Aluminium–carbon", range: [0.4, 0.6], side: "l" },
+  { node: "Tire.003_30", title: "Pirelli P Zero", sub: "Tyre", range: [0.6, 0.76], side: "r" },
+  { node: "Brake_19", title: "Brembo", sub: "Carbon-ceramic", range: [0.62, 0.78], side: "l" },
+  { node: "Headlights_17", title: "Matrix LED", sub: "Signature lighting", range: [0.78, 0.94], side: "r" },
+  { node: "Mechanics_6", title: "V12 · 6.5 L", sub: "830 CV", range: [0.93, 1.1], side: "l" },
+];

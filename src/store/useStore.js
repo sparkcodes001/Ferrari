@@ -12,6 +12,10 @@ const useStore = create((set) => ({
 
   heroReady: false,
   setHeroReady: (value) => set({ heroReady: value }),
+
+  // true the moment the preloader curtain starts lifting: hero entrance cue
+  revealed: false,
+  setRevealed: (value) => set({ revealed: value }),
 }));
 
 export default useStore;

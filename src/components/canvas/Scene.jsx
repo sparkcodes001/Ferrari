@@ -8,8 +8,7 @@ import {
 } from "@react-three/drei";
 import * as THREE from "three";
 
-const CAR_TARGET = new THREE.Vector3(-1.921, 1.44, 3.727);
-const CAM_POSITION = [-23.545, 35.709, -0.932];
+import { CAR_TARGET, CAM_POSITION } from "../../config/camera";
 
 function Scene({ children, debug = false, headlightsOn, active = true }) {
   return (

@@ -3,6 +3,7 @@ import Scene from "../canvas/Scene";
 import CarModel from "../canvas/CarModel";
 import GroundPlane from "../canvas/GroundPlane";
 import HeroText from "../canvas/HeroText";
+import HeroCamera from "../canvas/HeroCamera";
 import HeroOverlay from "../HeroOverlay";
 import HeroTelemetry from "../HeroTelemetry";
 import ErrorBoundary from "../ui/ErrorBoundary";
@@ -58,6 +59,7 @@ function Hero() {
                 <CarModel url={CAR_MODEL} paint={car.paint} />
                 <GroundPlane position={[-0.171, 0.079, 1.775]} />
                 <HeroText position={[-8, 0.082, 2.6]} />
+                <HeroCamera />
               </Scene>
             </Suspense>
           </ErrorBoundary>
