@@ -2,6 +2,7 @@ import useLenis from "./hooks/useLenis";
 import useStore from "./store/useStore";
 import Preloader from "./components/sections/Preloader";
 import Engineering from "./components/sections/Engineering";
+import Craft from "./components/sections/Craft";
 import Navbar from "./components/ui/Navbar";
 import Hero from "./components/sections/Hero";
 import Intro from "./components/sections/Intro";
@@ -20,7 +21,8 @@ function App() {
       <main>
         <Hero />
         <Intro />
-        <Engineering />
+        {/* <Engineering /> */}
+        <Craft />
         <Specs />
         <Heritage />
         <CTA />
