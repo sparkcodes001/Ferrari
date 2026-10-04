@@ -1,10 +1,11 @@
 // components/sections/Preloader.jsx
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import useStore from "../../store/useStore";
 import usePreloaderGate from "../../hooks/usePreloaderGate";
 import FerrariLogo from "../ui/FerrariLogo";
 import { strokeUnits, pad3 } from "../../utils/logoDraw";
+import { applySound, startEngine, setRev, flyBy } from "../../utils/engineSound";
 
 const MIN_TIME = 2.2;
 const TICKS = 48; // rev-counter segments
@@ -22,6 +23,10 @@ function Preloader() {
   const markReady = useRef(() => {});
   const setIsLoading = useStore((s) => s.setIsLoading);
   const setRevealed = useStore((s) => s.setRevealed);
+  const setSoundOn = useStore((s) => s.setSoundOn);
+  const [chosen, setChosen] = useState(false);
+  const soundRef = useRef(false);
+  const markChoice = useRef(() => {});
   const ready = usePreloaderGate();
 
   useEffect(() => {
@@ -72,6 +77,9 @@ function Preloader() {
         let label = STATUS[0][1];
         for (const [at, txt] of STATUS) if (state.v >= at) label = txt;
         if (status.textContent !== label) status.textContent = label;
+
+        // engine revs with the loader once the visitor chose sound
+        if (soundRef.current) setRev(state.v / 100, true);
       };
       render();
 
@@ -84,7 +92,14 @@ function Preloader() {
         .to("[data-ui]", { opacity: 0, duration: 0.3 }, "+=0.15")
         .to(logo, { scale: 1.14, duration: 1.1, ease: "expo.inOut" }, "<")
         // cue the hero entrance the moment the curtain starts to lift
-        .call(() => setRevealed(true), null, "<0.1")
+        .call(
+          () => {
+            setRevealed(true);
+            if (soundRef.current) flyBy();
+          },
+          null,
+          "<0.1",
+        )
         .to(
           root.current,
           {
@@ -106,7 +121,8 @@ function Preloader() {
           ease: "power2.out",
           onUpdate: render,
         });
-      const tryFinish = () => minDone && readyFlag && finish.play();
+      let choice = false;
+      const tryFinish = () => minDone && readyFlag && choice && finish.play();
 
       gsap.to(state, {
         v: 90,
@@ -122,6 +138,10 @@ function Preloader() {
         readyFlag = true;
         tryFinish();
       };
+      markChoice.current = () => {
+        choice = true;
+        tryFinish();
+      };
     }, root);
 
     return () => ctx.revert();
@@ -130,6 +150,17 @@ function Preloader() {
   useEffect(() => {
     if (ready) markReady.current();
   }, [ready]);
+
+  // the click that chooses is also what unlocks browser audio
+  const choose = (withSound) => {
+    if (chosen) return;
+    setChosen(true);
+    soundRef.current = withSound;
+    applySound(withSound);
+    setSoundOn(withSound);
+    if (withSound) startEngine();
+    markChoice.current();
+  };
 
   return (
     <div
@@ -174,6 +205,24 @@ function Preloader() {
         >
           Initialising chassis
         </span>
+      </div>
+
+      <div
+        data-ui
+        className={`flex flex-col items-center gap-3 transition-opacity duration-500 ${chosen ? "pointer-events-none opacity-0" : "opacity-100"}`}
+      >
+        <button
+          onClick={() => choose(true)}
+          className="rounded-full border border-red-500 px-7 py-3 font-mono text-[11px] uppercase tracking-[0.3em] text-white transition hover:bg-red-600"
+        >
+          Enter with sound
+        </button>
+        <button
+          onClick={() => choose(false)}
+          className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/50 transition hover:text-white"
+        >
+          Enter silent
+        </button>
       </div>
 
       <div

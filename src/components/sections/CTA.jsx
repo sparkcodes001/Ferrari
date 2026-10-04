@@ -166,7 +166,7 @@ export default function CTA() {
         <div className="cta-flash" ref={flashRef} />
 
         <div className="cta-top">
-          <span className="cta-label">( 06 ) — Ignition</span>
+          <span className="cta-label">( 07 ) — Ignition</span>
           {ignited ? (
             <button className="cta-text-btn" onClick={reset}>
               Switch off ↺

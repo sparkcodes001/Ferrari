@@ -1,0 +1,96 @@
+.her {
+  position: relative;
+  padding: 22vh 4vw 6vh;
+  background: #0a0908;
+  color: #efeae0;
+  font-family: "Syncopate", "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+.her-top {
+  position: absolute;
+  top: 12vh;
+  left: 4vw;
+  right: 4vw;
+  display: flex;
+  justify-content: space-between;
+}
+.her-label {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(8px, 0.68vw, 13px);
+  letter-spacing: 0.22em;
+  color: rgba(239, 234, 224, 0.6);
+}
+.her-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 4vw; }
+.her-sticky {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  display: grid;
+  align-items: center;
+  justify-items: start;
+}
+.her-year {
+  grid-area: 1 / 1;
+  font-weight: 700;
+  font-size: clamp(90px, 16vw, 330px);
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(239, 234, 224, 0.35);
+  opacity: 0;
+  transform: translateY(8vh);
+  transition: opacity 0.6s ease, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), color 0.5s ease;
+}
+.her-year.is-on { opacity: 1; transform: none; color: #ffcd00; -webkit-text-stroke: 0; }
+.her-year.is-past { opacity: 0; transform: translateY(-8vh); }
+
+.her-list { margin: 0; padding: 0; list-style: none; }
+.her-list li {
+  min-height: 80vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  gap: 2.4vh;
+  opacity: 0.22;
+  transition: opacity 0.5s ease;
+}
+.her-list li.is-on { opacity: 1; }
+.her-no {
+  margin: 0;
+  font-family: "Space Mono", monospace;
+  font-size: clamp(9px, 0.8vw, 14px);
+  letter-spacing: 0.3em;
+  color: #da291c;
+}
+.her-list h3 {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(24px, 3.4vw, 64px);
+  line-height: 1.05;
+}
+.her-text {
+  margin: 0;
+  max-width: 28vw;
+  font-family: "Space Mono", monospace;
+  text-transform: none;
+  font-size: clamp(11px, 0.98vw, 18px);
+  letter-spacing: 0.06em;
+  line-height: 1.75;
+  color: rgba(239, 234, 224, 0.85);
+}
+
+@media (max-width: 900px) {
+  .her-grid { grid-template-columns: 1fr; gap: 0; }
+  .her-sticky {
+    top: 8vh;
+    height: 26vh;
+    z-index: 2;
+    background: linear-gradient(#0a0908 75%, transparent);
+  }
+  .her-year { font-size: clamp(64px, 24vw, 130px); }
+  .her-list li { min-height: 56vh; }
+  .her-text { max-width: 100%; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .her-year, .her-list li { transition: none; }
+}

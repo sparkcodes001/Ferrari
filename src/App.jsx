@@ -8,6 +8,7 @@ import SoundController from "./components/ui/SoundController";
 import Hero from "./components/sections/Hero";
 import Intro from "./components/sections/Intro";
 import Specs from "./components/sections/Specs";
+import Collection from "./components/sections/Collection";
 import Heritage from "./components/sections/Heritage";
 import CTA from "./components/sections/CTA";
 
@@ -26,6 +27,7 @@ function App() {
         <Engineering />
         <Craft />
         <Specs />
+        <Collection />
         <Heritage />
         <CTA />
       </main>

@@ -11,11 +11,12 @@ const LINKS = [
   { label: "Models", href: "#models" },
   { label: "Craft", href: "#craft" },
   { label: "Specs", href: "#specs" },
+  { label: "Collection", href: "#collection" },
   { label: "Heritage", href: "#heritage" },
 ];
 const MENU_LINKS = [...LINKS, { label: "Dealer", href: "#dealer" }];
 // sections the "active link" logic watches (order-independent)
-const TRACK = ["#models", "#craft", "#dealer", "#specs", "#heritage"];
+const TRACK = ["#models", "#craft", "#dealer", "#specs", "#collection", "#heritage"];
 const RING = 2 * Math.PI * 24; // scroll-progress ring circumference
 
 // Pull `target` toward the pointer while it hovers `trigger`.

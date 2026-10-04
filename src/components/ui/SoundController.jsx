@@ -1,11 +1,19 @@
 import { useEffect } from "react";
 import useStore from "../../store/useStore";
 import { setSoundEnabled, ensureAudio, setDrive } from "../../utils/engineSound";
+import { startBed, stopBed } from "../../utils/bed";
 
 // Owns the site-wide sound: persistence, first-gesture unlock, the "M" key,
 // and the ambient engine that follows scroll speed. Renders nothing.
 export default function SoundController() {
   const soundOn = useStore((s) => s.soundOn);
+  const revealed = useStore((s) => s.revealed);
+
+  // music bed joins once the curtain has lifted
+  useEffect(() => {
+    if (soundOn && revealed) startBed();
+    else stopBed();
+  }, [soundOn, revealed]);
 
   useEffect(() => {
     setSoundEnabled(soundOn);
