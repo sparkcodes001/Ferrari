@@ -4,6 +4,7 @@ import "../hero.css";
 import FerrariLogo from "./FerrariLogo";
 import useStore from "../../store/useStore";
 import { scrollToTarget } from "../../hooks/useLenis";
+import { applySound, blip } from "../../utils/engineSound";
 
 const LINKS = [
   { label: "Home", href: "#top" },
@@ -49,6 +50,7 @@ function RollLink({ href, active, onClick, children }) {
     <a
       href={href}
       onClick={onClick}
+      onPointerEnter={() => blip(520, 0.05, 0.03)}
       className={`ho-link${active ? " is-active" : ""}`}
     >
       <span data-text={children}>{children}</span>
@@ -62,6 +64,8 @@ export default function Navbar() {
   const [hidden, setHidden] = useState(false);
   const [active, setActive] = useState(null);
   const revealed = useStore((s) => s.revealed);
+  const soundOn = useStore((s) => s.soundOn);
+  const setSoundOn = useStore((s) => s.setSoundOn);
   const heroHeight = useRef(Infinity); // stays Infinity (never hide) until measured
   const ringRef = useRef(null);
   const brandRef = useRef(null);
@@ -238,12 +242,31 @@ export default function Navbar() {
 
           <a
             className="ho-dealer"
+            onPointerEnter={() => blip(520, 0.05, 0.03)}
             href="#dealer"
             onClick={(e) => go(e, "#dealer")}
           >
             <span>Find a dealer</span>
             <i>↗</i>
           </a>
+
+          <button
+            className="ho-sound"
+            aria-pressed={soundOn}
+            aria-label={soundOn ? "Turn sound off" : "Turn sound on"}
+            onClick={() => {
+              applySound(!soundOn);
+              setSoundOn(!soundOn);
+            }}
+          >
+            <span className="ho-eq" aria-hidden="true">
+              <i />
+              <i />
+              <i />
+              <i />
+            </span>
+            <em>Sound</em>
+          </button>
 
           <div className="ho-burger-wrap" ref={burgerRef}>
             <svg className="ho-ring" viewBox="0 0 52 52" aria-hidden="true">
@@ -260,7 +283,10 @@ export default function Navbar() {
               className={`ho-burger${open ? " is-open" : ""}`}
               aria-label={open ? "Close menu" : "Open menu"}
               aria-expanded={open}
-              onClick={() => setOpen((o) => !o)}
+              onClick={() => {
+                blip(380, 0.08, 0.05);
+                setOpen((o) => !o);
+              }}
             >
               <span />
               <span />

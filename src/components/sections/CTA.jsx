@@ -1,12 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import gsap from "gsap";
 import useScrollProgress from "../../hooks/useScrollProgress";
+import useStore from "../../store/useStore";
 import {
   startCrank,
   setRev,
   releaseCrank,
   ignite,
-  setSoundEnabled,
+  applySound,
   disposeSound,
 } from "../../utils/engineSound";
 import "./cta.css";
@@ -36,7 +37,8 @@ export default function CTA() {
   const hold = useRef({ active: false, h: 0, last: 0, raf: 0 });
   const ignitedRef = useRef(false);
   const [ignited, setIgnited] = useState(false);
-  const [sound, setSound] = useState(true);
+  const sound = useStore((s) => s.soundOn);
+  const setSoundOn = useStore((s) => s.setSoundOn);
 
   // scroll-driven entrance: headline lines, then the start button
   useScrollProgress(sec, (p) => {
@@ -148,8 +150,8 @@ export default function CTA() {
 
   const toggleSound = () => {
     const next = !sound;
-    setSound(next);
-    setSoundEnabled(next);
+    applySound(next);
+    setSoundOn(next);
   };
 
   return (

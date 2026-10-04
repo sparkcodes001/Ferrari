@@ -239,3 +239,6 @@
   color: transparent;
   -webkit-text-stroke: 1px rgba(239, 234, 224, 0.1);
 }
+
+/* the curtain is wider than the screen: clip sideways only, so sticky + the curve above still work */
+.intro { overflow-x: clip; }

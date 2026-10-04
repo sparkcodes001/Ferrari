@@ -1,0 +1,217 @@
+.specs {
+  position: relative;
+  height: 460vh;
+  background: var(--nero, #0a0908);
+  color: var(--bianco, #efeae0);
+  font-family: "Syncopate", "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+.specs-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  padding: 0 4vw;
+}
+.specs-stage::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse 50% 60% at 28% 55%, rgba(218, 41, 28, 0.2), transparent 70%);
+  opacity: 0;
+  transition: opacity 0.35s ease;
+  pointer-events: none;
+}
+.specs-stage.is-red::before { opacity: 1; }
+
+.specs-top {
+  position: absolute;
+  top: 12vh;
+  left: 4vw;
+  right: 4vw;
+  display: flex;
+  justify-content: space-between;
+}
+.specs-label,
+.specs-tag {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(8px, 0.68vw, 13px);
+  letter-spacing: 0.22em;
+  color: rgba(239, 234, 224, 0.6);
+}
+
+.specs-grid {
+  position: relative;
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  align-items: center;
+  gap: 4vw;
+}
+
+/* dial */
+.specs-dialwrap {
+  position: relative;
+  justify-self: center;
+  width: clamp(260px, min(46vh, 38vw), 620px);
+  aspect-ratio: 1;
+}
+.specs-dial { width: 100%; height: 100%; overflow: visible; }
+.sd-track { fill: none; stroke: rgba(239, 234, 224, 0.14); stroke-width: 2; }
+.sd-red { fill: none; stroke: #da291c; stroke-width: 3; }
+.sd-tick { stroke: rgba(239, 234, 224, 0.4); stroke-width: 1; }
+.sd-tick.is-major { stroke: rgba(239, 234, 224, 0.85); stroke-width: 2; }
+.sd-tick.is-red { stroke: #da291c; }
+.sd-label {
+  font-family: "Syncopate", sans-serif;
+  font-weight: 700;
+  font-size: 15px;
+  fill: rgba(239, 234, 224, 0.85);
+  text-anchor: middle;
+  dominant-baseline: middle;
+}
+.sd-label.is-red { fill: #da291c; }
+.sd-unit {
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  letter-spacing: 3px;
+  fill: rgba(239, 234, 224, 0.45);
+  text-anchor: middle;
+}
+.sd-needle {
+  transform-box: view-box;
+  transform-origin: 50% 50%;
+  transform: rotate(-135deg);
+}
+.sd-needle line { stroke: #da291c; stroke-width: 3; stroke-linecap: round; }
+.sd-needle circle { fill: #0a0908; stroke: #da291c; stroke-width: 3; }
+
+.specs-gear {
+  position: absolute;
+  left: 50%;
+  top: 71%;
+  transform: translateX(-50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6vh;
+}
+.specs-gear b {
+  font-size: clamp(34px, 5vw, 96px);
+  line-height: 1;
+  font-weight: 700;
+  color: #ffcd00;
+}
+.specs-gear b.is-bump { animation: spec-bump 0.35s cubic-bezier(0.16, 1, 0.3, 1); }
+@keyframes spec-bump {
+  0% { transform: scale(1.35); opacity: 0.4; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+/* right side: live readouts and the spec sheet share one cell */
+.specs-stack { display: grid; }
+.specs-stack > * { grid-area: 1 / 1; }
+.specs-speed { display: flex; align-items: baseline; gap: 1vw; }
+.specs-speed span {
+  font-weight: 700;
+  font-size: clamp(56px, 8.5vw, 170px);
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+}
+.specs-speed small {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(10px, 0.9vw, 16px);
+  letter-spacing: 0.2em;
+  color: rgba(239, 234, 224, 0.6);
+}
+.specs-cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 2vw;
+  margin: 4vh 0 3vh;
+  padding-top: 3vh;
+  border-top: 1px solid rgba(239, 234, 224, 0.2);
+}
+.specs-cards > div { display: flex; flex-direction: column; gap: 1vh; }
+.specs-cards b {
+  font-weight: 700;
+  font-size: clamp(22px, 2.8vw, 54px);
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.specs-curve {
+  display: block;
+  width: 100%;
+  height: 14vh;
+  margin-bottom: 1vh;
+  overflow: visible;
+}
+.sc-line {
+  fill: none;
+  stroke: rgba(239, 234, 224, 0.75);
+  stroke-width: 2;
+  vector-effect: non-scaling-stroke;
+}
+.sc-guide {
+  stroke: rgba(218, 41, 28, 0.6);
+  stroke-width: 1;
+  stroke-dasharray: 3 4;
+  vector-effect: non-scaling-stroke;
+}
+.sc-dot { fill: #da291c; filter: drop-shadow(0 0 8px rgba(218, 41, 28, 0.9)); }
+
+.specs-sheet {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  align-self: center;
+  opacity: 0;
+  pointer-events: none;
+}
+.specs-sheet li {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  padding: 2.2vh 0;
+  border-bottom: 1px solid rgba(239, 234, 224, 0.2);
+  opacity: 0;
+}
+.specs-sheet li span {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(9px, 0.8vw, 14px);
+  letter-spacing: 0.22em;
+  color: rgba(239, 234, 224, 0.6);
+}
+.specs-sheet li b {
+  font-weight: 700;
+  font-size: clamp(14px, 1.7vw, 32px);
+  letter-spacing: 0.04em;
+}
+
+.specs-rail {
+  position: absolute;
+  left: 4vw;
+  right: 4vw;
+  bottom: 7vh;
+  height: 1px;
+  background: rgba(239, 234, 224, 0.2);
+}
+.specs-rail i {
+  display: block;
+  height: 100%;
+  background: #da291c;
+  transform-origin: left;
+  transform: scaleX(0);
+}
+
+@media (max-width: 900px) {
+  .specs-stage { padding-top: 16vh; align-items: flex-start; }
+  .specs-grid { grid-template-columns: 1fr; gap: 2vh; }
+  .specs-dialwrap { width: min(62vw, 34vh); }
+  .specs-speed span { font-size: clamp(48px, 17vw, 90px); }
+  .specs-cards { margin: 2vh 0; padding-top: 2vh; }
+  .specs-curve { display: none; }
+}

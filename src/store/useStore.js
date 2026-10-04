@@ -1,6 +1,18 @@
 import { create } from "zustand";
 
+const readSound = () => {
+  try {
+    return localStorage.getItem("fera-sound") === "1";
+  } catch {
+    return false;
+  }
+};
+
 const useStore = create((set) => ({
+  // sound is opt-in: off until the visitor switches it on
+  soundOn: readSound(),
+  setSoundOn: (value) => set({ soundOn: value }),
+
   isLoading: true,
   setIsLoading: (value) => set({ isLoading: value }),
 

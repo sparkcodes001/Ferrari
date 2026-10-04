@@ -21,15 +21,8 @@ function Media({ kind, image, video, vref }) {
   const [vidOk, setVidOk] = useState(false);
   return (
     <div className="craft-media">
-      {/* <div className={`craft-fb craft-fb-${kind}`}>
-        {import.meta.env.DEV && (
-          <span className="craft-hint">
-            {video || image
-              ? `add ${(video || image).replace("/", "public/")}`
-              : ""}
-          </span>
-        )}
-      </div> */}
+      <div className={`craft-fb craft-fb-${kind}`}>
+      </div>
       {image && (
         <img
           src={image}

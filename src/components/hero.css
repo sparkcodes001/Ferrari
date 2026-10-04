@@ -739,3 +739,39 @@
   .ho-dealer,
   .ho-links { display: none; }
 }
+
+/* sound toggle: equaliser bars that dance when sound is on */
+.ho-sound {
+  pointer-events: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7vw;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  cursor: pointer;
+}
+.ho-eq { display: inline-flex; align-items: flex-end; gap: 3px; height: 16px; }
+.ho-eq i {
+  display: block;
+  width: 2px;
+  height: 3px;
+  background: currentColor;
+  transition: height 0.3s ease;
+}
+.ho-sound[aria-pressed="true"] .ho-eq i { animation: ho-eq 0.9s ease-in-out infinite alternate; }
+.ho-eq i:nth-child(2) { animation-delay: -0.3s !important; }
+.ho-eq i:nth-child(3) { animation-delay: -0.6s !important; }
+.ho-eq i:nth-child(4) { animation-delay: -0.15s !important; }
+@keyframes ho-eq { from { height: 3px; } to { height: 16px; } }
+.ho-sound em {
+  font-family: "Space Mono", monospace;
+  font-style: normal;
+  font-size: clamp(8px, 0.62vw, 12px);
+  letter-spacing: 0.2em;
+}
+@media (max-width: 900px) { .ho-sound em { display: none; } }
+@media (prefers-reduced-motion: reduce) {
+  .ho-sound[aria-pressed="true"] .ho-eq i { animation: none; height: 10px; }
+}

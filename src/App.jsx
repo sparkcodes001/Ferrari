@@ -4,6 +4,7 @@ import Preloader from "./components/sections/Preloader";
 import Engineering from "./components/sections/Engineering";
 import Craft from "./components/sections/Craft";
 import Navbar from "./components/ui/Navbar";
+import SoundController from "./components/ui/SoundController";
 import Hero from "./components/sections/Hero";
 import Intro from "./components/sections/Intro";
 import Specs from "./components/sections/Specs";
@@ -18,10 +19,11 @@ function App() {
     <>
       {isLoading && <Preloader />}
       <Navbar />
+      <SoundController />
       <main>
         <Hero />
         <Intro />
-        {/* <Engineering /> */}
+        <Engineering />
         <Craft />
         <Specs />
         <Heritage />
