@@ -3,6 +3,7 @@ import { Text } from "@react-three/drei";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { carTrack } from "./carTrack";
+import useStore from "../../store/useStore";
 
 const WORD = "FERRARI";
 const FONT_SIZE = 5.5;
@@ -113,6 +114,10 @@ function HeroText({ position = [-8, 0.082, 2.6] }) {
   }, []);
 
   const ready = letters.every((_, i) => bounds[i]);
+
+  useEffect(() => {
+    if (ready) useStore.getState().setTextReady(true);
+  }, [ready]);
 
   const layout = useMemo(() => {
     if (!ready) return null;

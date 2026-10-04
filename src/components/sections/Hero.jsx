@@ -4,6 +4,8 @@ import CarModel from "../canvas/CarModel";
 import GroundPlane from "../canvas/GroundPlane";
 import HeroText from "../canvas/HeroText";
 import HeroCamera from "../canvas/HeroCamera";
+import SceneReady from "../canvas/SceneReady";
+import useStore from "../../store/useStore";
 import HeroOverlay from "../HeroOverlay";
 import HeroTelemetry from "../HeroTelemetry";
 import ErrorBoundary from "../ui/ErrorBoundary";
@@ -12,6 +14,7 @@ import "../hero.css";
 
 function Hero() {
   const [index, setIndex] = useState(0);
+  const revealed = useStore((s) => s.revealed);
   const [active, setActive] = useState(true);
   const rootRef = useRef(null);
 
@@ -52,7 +55,7 @@ function Hero() {
   return (
     <div className="hero-root" id="top" data-nav="dark" ref={rootRef}>
       <section className="hero-stage" style={theme}>
-        <div className="hero-canvas">
+        <div className={`hero-canvas${revealed ? " is-in" : ""}`}>
           <ErrorBoundary>
             <Suspense fallback={null}>
               <Scene active={active}>
@@ -60,6 +63,7 @@ function Hero() {
                 <GroundPlane position={[-0.171, 0.079, 1.775]} />
                 <HeroText position={[-8, 0.082, 2.6]} />
                 <HeroCamera />
+                <SceneReady />
               </Scene>
             </Suspense>
           </ErrorBoundary>

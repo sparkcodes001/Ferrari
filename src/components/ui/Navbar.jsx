@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
+import gsap from "gsap";
 import "../hero.css";
+import FerrariLogo from "./FerrariLogo";
+import useStore from "../../store/useStore";
 import { scrollToTarget } from "../../hooks/useLenis";
 
 const LINKS = [
@@ -8,12 +11,64 @@ const LINKS = [
   { label: "Specs", href: "#specs" },
   { label: "Heritage", href: "#heritage" },
 ];
+const MENU_LINKS = [...LINKS, { label: "Dealer", href: "#dealer" }];
+// sections the "active link" logic watches (order-independent)
+const TRACK = ["#models", "#dealer", "#specs", "#heritage"];
+const RING = 2 * Math.PI * 24; // scroll-progress ring circumference
+
+// Pull `target` toward the pointer while it hovers `trigger`.
+function useMagnetic(trigger, target, strength = 0.3) {
+  useEffect(() => {
+    const t = trigger.current;
+    const el = target.current;
+    if (!t || !el || !window.matchMedia("(hover: hover)").matches) return;
+    const xTo = gsap.quickTo(el, "x", { duration: 0.6, ease: "power3" });
+    const yTo = gsap.quickTo(el, "y", { duration: 0.6, ease: "power3" });
+    const move = (e) => {
+      const r = t.getBoundingClientRect();
+      xTo((e.clientX - (r.left + r.width / 2)) * strength);
+      yTo((e.clientY - (r.top + r.height / 2)) * strength);
+    };
+    const leave = () => {
+      xTo(0);
+      yTo(0);
+    };
+    t.addEventListener("pointermove", move);
+    t.addEventListener("pointerleave", leave);
+    return () => {
+      t.removeEventListener("pointermove", move);
+      t.removeEventListener("pointerleave", leave);
+      gsap.set(el, { clearProps: "x,y" });
+    };
+  }, [trigger, target, strength]);
+}
+
+function RollLink({ href, active, onClick, children }) {
+  return (
+    <a
+      href={href}
+      onClick={onClick}
+      className={`ho-link${active ? " is-active" : ""}`}
+    >
+      <span data-text={children}>{children}</span>
+    </a>
+  );
+}
 
 export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [light, setLight] = useState(false);
   const [hidden, setHidden] = useState(false);
-  const heroHeight = useRef(Infinity); // stays Infinity (never hide) until measured below
+  const [active, setActive] = useState(null);
+  const revealed = useStore((s) => s.revealed);
+  const heroHeight = useRef(Infinity); // stays Infinity (never hide) until measured
+  const ringRef = useRef(null);
+  const brandRef = useRef(null);
+  const markRef = useRef(null);
+  const burgerRef = useRef(null);
+
+  useMagnetic(brandRef, markRef, 0.25);
+  useMagnetic(burgerRef, burgerRef, 0.35);
 
   // Esc closes the menu, body scroll is locked while it's open
   useEffect(() => {
@@ -28,7 +83,6 @@ export default function Navbar() {
     };
   }, [open]);
 
-  // measure the Hero's height so we know when it ends
   // flip color scheme based on whichever section is under the navbar
   useEffect(() => {
     const sections = Array.from(document.querySelectorAll("[data-nav]"));
@@ -50,7 +104,7 @@ export default function Navbar() {
       requestAnimationFrame(update);
     };
 
-    update(); // set correct state immediately on mount
+    update();
     window.addEventListener("scroll", onScroll, { passive: true });
     window.addEventListener("resize", onScroll);
     return () => {
@@ -59,7 +113,7 @@ export default function Navbar() {
     };
   }, []);
 
-  // hide on scroll down, reveal on scroll up — only AFTER the Hero ends
+  // scroll ring + active link + hide-on-scroll (after the Hero ends)
   useEffect(() => {
     const measure = () => {
       const hero = document.getElementById("top");
@@ -71,26 +125,50 @@ export default function Navbar() {
     let lastY = window.scrollY;
     let ticking = false;
 
+    const frame = () => {
+      const y = window.scrollY;
+      const delta = y - lastY;
+
+      // page progress ring around the burger
+      const max = document.documentElement.scrollHeight - window.innerHeight;
+      const p = max > 0 ? Math.min(1, Math.max(0, y / max)) : 0;
+      if (ringRef.current)
+        ringRef.current.style.strokeDashoffset = String(RING * (1 - p));
+
+      // which section owns the screen right now
+      const line = window.innerHeight * 0.35;
+      let best = null;
+      let bestTop = -Infinity;
+      for (const h of TRACK) {
+        const el = document.querySelector(h);
+        if (!el) continue;
+        const top = el.getBoundingClientRect().top;
+        if (top <= line && top > bestTop) {
+          best = h;
+          bestTop = top;
+        }
+      }
+      setActive(best);
+
+      if (y < heroHeight.current) {
+        setHidden(false); // always visible through the whole Hero
+      } else if (delta > 4) {
+        setHidden(true);
+      } else if (delta < -4) {
+        setHidden(false);
+      }
+
+      lastY = y;
+      ticking = false;
+    };
+
     const onScroll = () => {
       if (ticking) return;
       ticking = true;
-      requestAnimationFrame(() => {
-        const y = window.scrollY;
-        const delta = y - lastY;
-
-        if (y < heroHeight.current) {
-          setHidden(false); // always visible through the whole Hero
-        } else if (delta > 4) {
-          setHidden(true);
-        } else if (delta < -4) {
-          setHidden(false);
-        }
-
-        lastY = y;
-        ticking = false;
-      });
+      requestAnimationFrame(frame);
     };
 
+    frame();
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => {
       window.removeEventListener("scroll", onScroll);
@@ -115,6 +193,7 @@ export default function Navbar() {
 
   const navClass = [
     "ho-nav",
+    !revealed && "is-pre",
     open && "is-open",
     !open && light && "is-light",
     !open && hidden && "is-hidden",
@@ -125,8 +204,16 @@ export default function Navbar() {
   return (
     <>
       <header className={navClass}>
-        <a className="ho-brand" href="#top" onClick={(e) => go(e, "#top")}>
-          <span className="ho-logo">Ferrari</span>
+        <a
+          ref={brandRef}
+          className="ho-brand"
+          href="#top"
+          aria-label="Ferrari, back to top"
+          onClick={(e) => go(e, "#top")}
+        >
+          <span ref={markRef} className="ho-mark-wrap">
+            <FerrariLogo className="ho-mark" aria-hidden="true" />
+          </span>
           <span className="ho-divider" />
           <div className="ho-meta">
             <div>Est. 1947</div>
@@ -137,20 +224,47 @@ export default function Navbar() {
         <div className="ho-right">
           <nav className="ho-links">
             {LINKS.slice(1).map((l) => (
-              <a key={l.href} href={l.href} onClick={(e) => go(e, l.href)}>
+              <RollLink
+                key={l.href}
+                href={l.href}
+                active={active === l.href}
+                onClick={(e) => go(e, l.href)}
+              >
                 {l.label}
-              </a>
+              </RollLink>
             ))}
           </nav>
-          <button
-            className={`ho-burger${open ? " is-open" : ""}`}
-            aria-label={open ? "Close menu" : "Open menu"}
-            aria-expanded={open}
-            onClick={() => setOpen((o) => !o)}
+
+          <a
+            className="ho-dealer"
+            href="#dealer"
+            onClick={(e) => go(e, "#dealer")}
           >
-            <span />
-            <span />
-          </button>
+            <span>Find a dealer</span>
+            <i>↗</i>
+          </a>
+
+          <div className="ho-burger-wrap" ref={burgerRef}>
+            <svg className="ho-ring" viewBox="0 0 52 52" aria-hidden="true">
+              <circle
+                ref={ringRef}
+                cx="26"
+                cy="26"
+                r="24"
+                strokeDasharray={RING}
+                strokeDashoffset={RING}
+              />
+            </svg>
+            <button
+              className={`ho-burger${open ? " is-open" : ""}`}
+              aria-label={open ? "Close menu" : "Open menu"}
+              aria-expanded={open}
+              onClick={() => setOpen((o) => !o)}
+            >
+              <span />
+              <span />
+            </button>
+          </div>
         </div>
       </header>
 
@@ -159,8 +273,9 @@ export default function Navbar() {
         aria-hidden={!open}
         data-lenis-prevent
       >
+        <FerrariLogo className="ho-menu-mark" aria-hidden="true" />
         <ul>
-          {LINKS.map((l, i) => (
+          {MENU_LINKS.map((l, i) => (
             <li key={l.href} style={{ "--i": i }}>
               <a
                 href={l.href}

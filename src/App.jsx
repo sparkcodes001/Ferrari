@@ -21,9 +21,9 @@ function App() {
         <Hero />
         <Intro />
         <Engineering />
-        <CTA />
         <Specs />
         <Heritage />
+        <CTA />
       </main>
     </>
   );

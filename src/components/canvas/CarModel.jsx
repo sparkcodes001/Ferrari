@@ -6,7 +6,6 @@ import * as THREE from "three";
 import { carTrack } from "./carTrack";
 import { HOVER_EXPLODE_MAP, safeName } from "./explodeConfig";
 import { HERO_SCROLL_VIEWPORTS } from "../../config/scroll";
-import useStore from "../../store/useStore";// ← add this line
 
 
 /* ───────────── Drive / wheel settings ───────────── */
@@ -348,7 +347,6 @@ function CarModel({ url = "/models/ferrari.glb", paint = null, ...props }) {
       ps.ready = false;
     }
 
-    useStore.getState().setHeroReady(true); // ← add this line
 
     return () => clones.forEach((c) => c.dispose());
   }, [scene]);

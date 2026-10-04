@@ -10,6 +10,9 @@ const useStore = create((set) => ({
   carColor: "#ff0000",
   setCarColor: (color) => set({ carColor: color }),
 
+  textReady: false,
+  setTextReady: (value) => set({ textReady: value }),
+
   heroReady: false,
   setHeroReady: (value) => set({ heroReady: value }),
 

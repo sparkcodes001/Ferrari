@@ -6,7 +6,7 @@ import useStore from "../store/useStore";
  * either the Hero's 3D scene reports itself ready (heroReady in the store),
  * or `maxWait` ms have passed (failsafe, so users are never trapped).
  */
-export default function usePreloaderGate({ maxWait = 6000 } = {}) {
+export default function usePreloaderGate({ maxWait = 9000 } = {}) {
   const heroReady = useStore((s) => s.heroReady);
   const [timedOut, setTimedOut] = useState(false);
 
