@@ -27,6 +27,7 @@ function EngineeringCar({ progressRef, hotspotsRef, ...props }) {
   const smoothed = useRef(0);
   const frame = useRef(null);
   const hotNodes = useRef([]);
+  const baseYaw = useRef(THREE.MathUtils.degToRad(-18));
 
   useLayoutEffect(() => {
     cloned.traverse((node) => {
@@ -87,13 +88,27 @@ function EngineeringCar({ progressRef, hotspotsRef, ...props }) {
     frame.current = { box, center: box.getCenter(new THREE.Vector3()) };
   }, [cloned]);
 
+  // Framing. Landscape keeps the original 3/4 view. On a portrait screen the car
+  // is turned so its length runs up the screen, and the camera looks down from
+  // higher up: the car then fills the tall frame instead of a thin strip.
   useLayoutEffect(() => {
     if (!frame.current || !camera.isPerspectiveCamera || size.width === 0) return;
+
+    const portrait = size.width / size.height < 0.9;
+    baseYaw.current = THREE.MathUtils.degToRad(portrait ? 82 : -18);
 
     const { box, center } = frame.current;
     const half = box.getSize(new THREE.Vector3()).multiplyScalar(0.5);
 
-    const dir = new THREE.Vector3(0.55, 0.32, 1).normalize();
+    // bounds of the (possibly turned) box, with room for the scroll-driven spin
+    const yaw = baseYaw.current + 0.3;
+    const c = Math.abs(Math.cos(yaw));
+    const sn = Math.abs(Math.sin(yaw));
+    const hx = portrait ? c * half.x + sn * half.z : half.x;
+    const hz = portrait ? sn * half.x + c * half.z : half.z;
+    const extent = new THREE.Vector3(hx, half.y, hz);
+
+    const dir = (portrait ? new THREE.Vector3(0.12, 0.92, 0.55) : new THREE.Vector3(0.55, 0.32, 1)).normalize();
     const forward = dir.clone().negate();
     const worldUp = new THREE.Vector3(0, 1, 0);
     let right = new THREE.Vector3().crossVectors(forward, worldUp);
@@ -101,20 +116,30 @@ function EngineeringCar({ progressRef, hotspotsRef, ...props }) {
     right.normalize();
     const camUp = new THREE.Vector3().crossVectors(right, forward).normalize();
 
-    const projHalfWidth = Math.abs(right.x) * half.x + Math.abs(right.y) * half.y + Math.abs(right.z) * half.z;
-    const projHalfHeight = Math.abs(camUp.x) * half.x + Math.abs(camUp.y) * half.y + Math.abs(camUp.z) * half.z;
+    const projHalfWidth = Math.abs(right.x) * extent.x + Math.abs(right.y) * extent.y + Math.abs(right.z) * extent.z;
+    const projHalfHeight = Math.abs(camUp.x) * extent.x + Math.abs(camUp.y) * extent.y + Math.abs(camUp.z) * extent.z;
 
     const vFov = THREE.MathUtils.degToRad(camera.fov);
     const hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
 
-    const margin = 1.35;
+    const margin = portrait ? 1.12 : 1.35;
     let distance = Math.max(projHalfHeight / Math.tan(vFov / 2), projHalfWidth / Math.tan(hFov / 2)) * margin;
     if (!Number.isFinite(distance) || distance <= 0.01) distance = 6;
 
-    camera.position.copy(center).addScaledVector(dir, distance);
-    camera.lookAt(center);
+    // the group spins around its own origin, so aim at the turned centre
+    const aim = portrait
+      ? center
+          .clone()
+          .applyAxisAngle(worldUp, baseYaw.current + 0.15)
+          .add(groupRef.current ? groupRef.current.position : new THREE.Vector3())
+      : center;
+    camera.position.copy(aim).addScaledVector(dir, distance);
+    camera.lookAt(aim);
     camera.near = Math.max(0.05, distance * 0.05);
     camera.far = distance * 8 + 10;
+    // portrait: lift the car a little so the caption below has room
+    if (portrait) camera.setViewOffset(size.width, size.height, 0, size.height * 0.05, size.width, size.height);
+    else camera.clearViewOffset();
     camera.updateProjectionMatrix();
   }, [camera, size.width, size.height]);
 
@@ -132,7 +157,7 @@ function EngineeringCar({ progressRef, hotspotsRef, ...props }) {
     }
 
     if (groupRef.current) {
-      groupRef.current.rotation.y = THREE.MathUtils.degToRad(-18) + amount * 0.55;
+      groupRef.current.rotation.y = baseYaw.current + amount * 0.55;
     }
 
     // hotspot labels: project each part's centre to screen space

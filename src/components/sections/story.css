@@ -22,6 +22,7 @@
 /* ───────── INTRO ───────── */
 .intro {
   height: 280vh;
+  height: 280svh;
   margin-top: -30vh; /* slides over the end of the pinned hero */
   z-index: 20;
 }
@@ -41,6 +42,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  height: var(--sh, 100vh);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -94,108 +96,6 @@
   right: 4vw;
   display: flex;
   justify-content: space-between;
-}
-
-/* ───────── FILM ───────── */
-.film {
-  height: 340vh;
-}
-.film-stage {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  overflow: hidden;
-}
-.film-window {
-  position: absolute;
-  inset: 0;
-  overflow: hidden;
-  transform: scale(0.3) translateZ(0);
-  transform-origin: center;
-  will-change: transform;
-  backface-visibility: hidden;
-}
-.film-video,
-.film-fallback {
-  position: absolute;
-  inset: 0;
-  background: #14110f;
-  display: grid;
-  place-items: center;
-}
-.film-fallback {
-  background:
-    radial-gradient(ellipse 70% 60% at 30% 70%, rgba(247, 214, 78, 0.55), transparent 70%),
-    radial-gradient(ellipse 60% 50% at 75% 30%, rgba(209, 18, 27, 0.35), transparent 70%),
-    #14110f;
-  background-size: 140% 140%;
-  animation: film-drift 9s ease-in-out infinite alternate;
-  display: grid;
-  place-items: center;
-}
-.film-fallback span {
-  font-family: "Space Mono", monospace;
-  font-size: clamp(9px, 0.8vw, 14px);
-  letter-spacing: 0.2em;
-  color: rgba(239, 234, 224, 0.55);
-  text-align: center;
-  padding: 0 4vw;
-}
-@keyframes film-drift {
-  from { background-position: 0% 0%; }
-  to { background-position: 100% 100%; }
-}
-.film-shade {
-  position: absolute;
-  inset: 0;
-  background: linear-gradient(
-    to top,
-    rgba(10, 9, 8, 0.75) 0%,
-    rgba(10, 9, 8, 0) 45%
-  );
-  opacity: 0;
-  will-change: opacity;
-}
-
-.film-meta {
-  position: absolute;
-  left: 4vw;
-  right: 4vw;
-  bottom: 8vh;
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-end;
-  pointer-events: none;
-}
-.film-meta-left {
-  display: flex;
-  flex-direction: column;
-  gap: 1vh;
-  will-change: opacity;
-}
-.film-time {
-  color: var(--paper);
-  font-variant-numeric: tabular-nums;
-}
-
-.film-caps {
-  position: absolute;
-  left: 4vw;
-  bottom: 16vh;
-  width: 60vw;
-  pointer-events: none;
-}
-.film-cap {
-  position: absolute;
-  left: 0;
-  bottom: 0;
-  margin: 0;
-  font-weight: 700;
-  font-size: clamp(24px, 4.2vw, 80px);
-  line-height: 1.05;
-  opacity: 0;
-  visibility: hidden;
-  will-change: opacity, transform;
 }
 
 /* ───────── intro upgrades ───────── */

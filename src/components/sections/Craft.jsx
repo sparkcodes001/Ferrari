@@ -40,7 +40,7 @@ function Media({ kind, image, video, vref }) {
           muted
           loop
           playsInline
-          preload="auto"
+          preload="metadata"
           className={vidOk ? "is-on" : ""}
           onLoadedData={() => setVidOk(true)}
         />

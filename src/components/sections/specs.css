@@ -1,6 +1,7 @@
 .specs {
   position: relative;
   height: 460vh;
+  height: 460svh;
   background: var(--nero, #0a0908);
   color: var(--bianco, #efeae0);
   font-family: "Syncopate", "Segoe UI", sans-serif;
@@ -10,6 +11,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  height: var(--sh, 100vh);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -208,10 +210,27 @@
 }
 
 @media (max-width: 900px) {
-  .specs-stage { padding-top: 16vh; align-items: flex-start; }
-  .specs-grid { grid-template-columns: 1fr; gap: 2vh; }
-  .specs-dialwrap { width: min(62vw, 34vh); }
-  .specs-speed span { font-size: clamp(48px, 17vw, 90px); }
-  .specs-cards { margin: 2vh 0; padding-top: 2vh; }
-  .specs-curve { display: none; }
+  /* one column: dial, then the live numbers, then the curve. Everything fits one screen. */
+  .specs-stage {
+    padding: max(15svh, 104px) 6vw 0;
+    align-items: flex-start;
+  }
+  .specs-top { top: max(9.5svh, 74px); left: 6vw; right: 6vw; }
+  .specs-top .specs-label:last-child { display: none; } /* the spec string lives in the final spec sheet on phones */
+  .specs-grid { grid-template-columns: 1fr; gap: 1.2svh; }
+  .specs-dialwrap { width: min(58vw, 31svh); }
+  .specs-gear { top: 68%; }
+  .specs-gear b { font-size: clamp(30px, 9vw, 52px); }
+  .specs-speed { gap: 10px; justify-content: center; }
+  .specs-speed span { font-size: clamp(52px, 19vw, 96px); }
+  .specs-cards { gap: 4vw; margin: 1.6svh 0; padding-top: 1.6svh; }
+  .specs-cards b { font-size: clamp(22px, 7vw, 36px); }
+  .specs-curve { display: block; height: 8svh; }
+  .specs-live > .specs-tag:last-child { display: block; margin-top: 0.6svh; }
+  .specs-sheet li { padding: 1.6svh 0; }
+  .specs-sheet li b { font-size: clamp(14px, 4.4vw, 22px); }
+  .specs-rail { left: 6vw; right: 6vw; bottom: max(3svh, 18px); }
+}
+@media (max-width: 900px) and (max-height: 700px) {
+  .specs-curve, .specs-live > .specs-tag:last-child { display: none; }
 }

@@ -1,96 +1,296 @@
-.her {
+/* ═══════════════════════════════════════════════════════
+   Heritage V2 — Pro Max
+   Scroll-pinned, GSAP-driven, era-aware
+═══════════════════════════════════════════════════════ */
+
+.herv2 {
+  --era-accent: #ffcd00;
   position: relative;
-  padding: 22vh 4vw 6vh;
-  background: #0a0908;
+  height: 100vh;
+  height: var(--sh, 100vh);
+  overflow: hidden;
+  background: #060504;
   color: #efeae0;
   font-family: "Syncopate", "Segoe UI", sans-serif;
   text-transform: uppercase;
-}
-.her-top {
-  position: absolute;
-  top: 12vh;
-  left: 4vw;
-  right: 4vw;
-  display: flex;
-  justify-content: space-between;
-}
-.her-label {
-  font-family: "Space Mono", monospace;
-  font-size: clamp(8px, 0.68vw, 13px);
-  letter-spacing: 0.22em;
-  color: rgba(239, 234, 224, 0.6);
-}
-.her-grid { display: grid; grid-template-columns: 1.1fr 1fr; gap: 4vw; }
-.her-sticky {
-  position: sticky;
-  top: 0;
-  height: 100vh;
-  display: grid;
-  align-items: center;
-  justify-items: start;
-}
-.her-year {
-  grid-area: 1 / 1;
-  font-weight: 700;
-  font-size: clamp(90px, 16vw, 330px);
-  line-height: 1;
-  letter-spacing: -0.03em;
-  color: transparent;
-  -webkit-text-stroke: 1px rgba(239, 234, 224, 0.35);
-  opacity: 0;
-  transform: translateY(8vh);
-  transition: opacity 0.6s ease, transform 0.9s cubic-bezier(0.16, 1, 0.3, 1), color 0.5s ease;
-}
-.her-year.is-on { opacity: 1; transform: none; color: #ffcd00; -webkit-text-stroke: 0; }
-.her-year.is-past { opacity: 0; transform: translateY(-8vh); }
-
-.her-list { margin: 0; padding: 0; list-style: none; }
-.her-list li {
-  min-height: 80vh;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 2.4vh;
-  opacity: 0.22;
-  transition: opacity 0.5s ease;
-}
-.her-list li.is-on { opacity: 1; }
-.her-no {
-  margin: 0;
-  font-family: "Space Mono", monospace;
-  font-size: clamp(9px, 0.8vw, 14px);
-  letter-spacing: 0.3em;
-  color: #da291c;
-}
-.her-list h3 {
-  margin: 0;
-  font-weight: 700;
-  font-size: clamp(24px, 3.4vw, 64px);
-  line-height: 1.05;
-}
-.her-text {
-  margin: 0;
-  max-width: 28vw;
-  font-family: "Space Mono", monospace;
-  text-transform: none;
-  font-size: clamp(11px, 0.98vw, 18px);
-  letter-spacing: 0.06em;
-  line-height: 1.75;
-  color: rgba(239, 234, 224, 0.85);
 }
 
-@media (max-width: 900px) {
-  .her-grid { grid-template-columns: 1fr; gap: 0; }
-  .her-sticky {
-    top: 8vh;
-    height: 26vh;
-    z-index: 2;
-    background: linear-gradient(#0a0908 75%, transparent);
-  }
-  .her-year { font-size: clamp(64px, 24vw, 130px); }
-  .her-list li { min-height: 56vh; }
-  .her-text { max-width: 100%; }
+/* ── Background gradients ── */
+.herv2-bgs {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
 }
+.herv2-bg {
+  position: absolute;
+  inset: 0;
+  will-change: opacity;
+}
+.herv2-glow {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1;
+  will-change: background;
+}
+
+/* ── Top strip ── */
+.herv2-top {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 5.5vh 4.5vw 0;
+  flex-shrink: 0;
+}
+.herv2-label {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(7px, 0.65vw, 12px);
+  letter-spacing: 0.24em;
+  color: rgba(239, 234, 224, 0.42);
+}
+
+/* ── Main grid ── */
+.herv2-grid {
+  position: relative;
+  z-index: 5;
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1.25fr 1fr;
+  align-items: center;
+  padding: 0 4.5vw;
+  gap: 0 5vw;
+  min-height: 0;
+}
+
+/* ════════════════
+   LEFT PANEL
+════════════════ */
+.herv2-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2.8vh;
+  overflow: hidden;
+}
+
+/* Year clip prevents the number from painting outside the left column */
+.herv2-year-clip {
+  overflow: hidden;
+  line-height: 0.86;
+}
+.herv2-year {
+  display: block;
+  font-weight: 700;
+  font-size: clamp(80px, 13vw, 280px);
+  line-height: 0.86;
+  letter-spacing: -0.05em;
+  /* Gradient fill tied to era accent via CSS variable */
+  background: linear-gradient(
+    150deg,
+    var(--era-accent) 0%,
+    rgba(239, 234, 224, 0.72) 48%,
+    var(--era-accent) 100%
+  );
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  color: transparent;
+  will-change: contents;
+  /* Subtle shimmer animation */
+  background-size: 300% 100%;
+  animation: her-shimmer 4s ease-in-out infinite alternate;
+}
+@keyframes her-shimmer {
+  from { background-position: 0% 50%; }
+  to   { background-position: 100% 50%; }
+}
+
+/* Accent progress line — grows 0→1 within each era via GSAP */
+.herv2-accent-rail {
+  width: 100%;
+  height: 1px;
+  background: rgba(239, 234, 224, 0.08);
+  overflow: hidden;
+  position: relative;
+}
+.herv2-accent-fill {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, var(--era-accent) 40%, var(--era-accent));
+  transform-origin: left;
+  transform: scaleX(0);
+  will-change: transform;
+}
+
+/* Large ghost era number — decorative */
+.herv2-era-large {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(160px, 30vw, 600px);
+  line-height: 1;
+  letter-spacing: -0.06em;
+  color: transparent;
+  -webkit-text-stroke: 1px rgba(239, 234, 224, 0.04);
+  position: absolute;
+  right: 50%;
+  bottom: -8%;
+  pointer-events: none;
+  user-select: none;
+  z-index: 0;
+}
+
+/* ════════════════
+   RIGHT PANEL
+════════════════ */
+.herv2-right {
+  display: flex;
+  flex-direction: column;
+  gap: 1.6vh;
+  position: relative;
+  z-index: 2;
+}
+
+.herv2-no {
+  margin: 0;
+  font-family: "Space Mono", monospace;
+  font-size: clamp(8px, 0.72vw, 13px);
+  letter-spacing: 0.38em;
+  color: var(--era-accent);
+  will-change: color;
+  transition: color 0.5s ease;
+}
+
+.herv2-tag {
+  margin: 0;
+  font-family: "Space Mono", monospace;
+  font-size: clamp(8px, 0.68vw, 12px);
+  letter-spacing: 0.3em;
+  color: rgba(239, 234, 224, 0.4);
+}
+
+.herv2-title {
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(20px, 2.8vw, 56px);
+  line-height: 1.08;
+  letter-spacing: 0.02em;
+  /* Clamp lines so an extra-long title doesn't break layout */
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.herv2-text {
+  margin: 0;
+  font-family: "Space Mono", monospace;
+  text-transform: none;
+  font-size: clamp(10px, 0.88vw, 16px);
+  line-height: 1.82;
+  letter-spacing: 0.055em;
+  color: rgba(239, 234, 224, 0.75);
+  max-width: 36ch;
+}
+
+/* Facts list */
+.herv2-facts {
+  margin: 1vh 0 0;
+  padding: 0;
+  list-style: none;
+  border-left: 2px solid var(--era-accent);
+  padding-left: 1.1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.65vh;
+  transition: border-color 0.5s ease;
+}
+.herv2-facts li {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(7.5px, 0.65vw, 11.5px);
+  letter-spacing: 0.22em;
+  color: rgba(239, 234, 224, 0.5);
+  line-height: 1.4;
+}
+
+/* ════════════════
+   BOTTOM FOOTER
+════════════════ */
+.herv2-foot {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  gap: 2.2vw;
+  padding: 0 4.5vw 4.5vh;
+  flex-shrink: 0;
+}
+
+.herv2-dots {
+  display: flex;
+  align-items: center;
+  gap: 0.42rem;
+}
+.herv2-dot {
+  display: block;
+  height: 3px;
+  border-radius: 2px;
+  transition:
+    width   0.45s cubic-bezier(0.16, 1, 0.3, 1),
+    opacity 0.4s ease,
+    background 0.45s ease;
+  will-change: width, opacity;
+}
+
+.herv2-counter {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(7px, 0.62vw, 11px);
+  letter-spacing: 0.32em;
+  color: rgba(239, 234, 224, 0.35);
+  white-space: nowrap;
+}
+
+.herv2-bar-wrap {
+  flex: 1;
+  height: 1px;
+  background: rgba(239, 234, 224, 0.1);
+  overflow: hidden;
+}
+.herv2-bar {
+  display: block;
+  height: 100%;
+  background: linear-gradient(90deg, var(--era-accent), rgba(239,234,224,0.6));
+  transform-origin: left;
+  transform: scaleX(0);
+  will-change: transform;
+}
+
+/* ═══════════
+   MOBILE
+═══════════ */
+@media (max-width: 860px) {
+  .herv2-grid {
+    grid-template-columns: 1fr;
+    align-items: flex-start;
+    padding-top: 2vh;
+    gap: 2.4vh 0;
+  }
+  .herv2-year      { font-size: clamp(72px, 22vw, 140px); }
+  .herv2-title     { font-size: clamp(20px, 6.5vw, 42px); }
+  .herv2-text      { font-size: clamp(10px, 3.4vw, 14px); max-width: 90%; }
+  .herv2-era-large { display: none; }
+  .herv2-facts     { display: none; }
+}
+
+/* ══════════════════
+   REDUCED MOTION
+══════════════════ */
 @media (prefers-reduced-motion: reduce) {
-  .her-year, .her-list li { transition: none; }
+  .herv2-dot,
+  .herv2-accent-fill,
+  .herv2-bar { transition: none; }
+  .herv2-year { animation: none; }
 }

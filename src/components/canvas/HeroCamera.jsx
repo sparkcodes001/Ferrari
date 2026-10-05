@@ -2,15 +2,15 @@ import { useEffect, useRef } from "react";
 import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import useStore from "../../store/useStore";
-import { CAR_TARGET, CAM_POSITION } from "../../config/camera";
+import { CAR_TARGET, CAM_POSITION, heroFov, isPortrait } from "../../config/camera";
 
-const FOV_END = 23; // must match the Canvas camera fov in Scene.jsx
-const FOV_START = 36; // entrance starts wider...
+const FOV_INTRO = 13; // entrance starts this many degrees wider...
 const SWING = 0.55; // ...orbits this many radians...
 const PULL = 0.32; // ...and starts this much closer
 const PARALLAX_X = 0.9; // world units of camera drift with the mouse
 const PARALLAX_Y = 0.6;
 const FOV_KICK = 3; // extra degrees at full scroll speed
+const PORTRAIT_SHIFT = 0.07; // portrait: push the car down 7% so the copy has room above
 
 const UP = new THREE.Vector3(0, 1, 0);
 const OFFSET = new THREE.Vector3(...CAM_POSITION).sub(CAR_TARGET);
@@ -22,12 +22,25 @@ const REDUCED =
 
 export default function HeroCamera({ duration = 2.8 }) {
   const camera = useThree((s) => s.camera);
+  const size = useThree((s) => s.size);
   const revealed = useStore((s) => s.revealed);
   const t = useRef(REDUCED ? 1 : 0);
   const mouse = useRef({ x: 0, y: 0 });
   const soft = useRef({ x: 0, y: 0 });
   const kick = useRef(0);
   const lastY = useRef(0);
+  const fovEnd = useRef(heroFov(size.width / size.height));
+
+  // framing that depends on the screen shape (fov + vertical shift)
+  useEffect(() => {
+    const { width: w, height: h } = size;
+    if (!w || !h) return;
+    fovEnd.current = heroFov(w / h);
+    if (isPortrait(w, h)) camera.setViewOffset(w, h, 0, -h * PORTRAIT_SHIFT, w, h);
+    else camera.clearViewOffset();
+    camera.fov = fovEnd.current;
+    camera.updateProjectionMatrix();
+  }, [camera, size]);
 
   useEffect(() => {
     if (REDUCED) return;
@@ -67,7 +80,7 @@ export default function HeroCamera({ duration = 2.8 }) {
     kick.current = THREE.MathUtils.damp(kick.current, Math.min(v / 3, 1), 4, delta);
 
     camera.position.copy(_p);
-    camera.fov = FOV_END + (1 - k) * (FOV_START - FOV_END) + kick.current * FOV_KICK;
+    camera.fov = fovEnd.current + (1 - k) * FOV_INTRO + kick.current * FOV_KICK;
     camera.updateProjectionMatrix();
     camera.lookAt(CAR_TARGET);
   });

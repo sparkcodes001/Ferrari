@@ -2,6 +2,7 @@
   --stroke: #141414;
   position: relative;
   height: 560vh;
+  height: 560svh;
   background: #efeae0;
   color: #141414;
   font-family: "Syncopate", "Segoe UI", sans-serif;
@@ -11,6 +12,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  height: var(--sh, 100vh);
   overflow: hidden;
 }
 
@@ -208,18 +210,6 @@
 
 /* ───────── designed fallbacks (shown until real media loads) ───────── */
 .craft-fb { position: absolute; inset: 0; overflow: hidden; }
-.craft-hint {
-  position: absolute;
-  right: 3vw;
-  top: 26vh;
-  z-index: 2;
-  font-family: "Space Mono", monospace;
-  text-transform: none;
-  font-size: 11px;
-  letter-spacing: 0.08em;
-  color: rgba(239, 234, 224, 0.45);
-}
-
 .craft-fb-film {
   background:
     radial-gradient(ellipse 70% 60% at 30% 70%, rgba(247, 214, 78, 0.5), transparent 70%),
@@ -292,7 +282,10 @@
 }
 
 @media (max-width: 900px) {
-  .craft-intro { top: 17vh; }
+  .craft-top { top: max(9.5svh, 74px); }
+  .craft-headline { font-size: clamp(24px, 8.2vw, 44px); }
+  .craft-foot { bottom: max(4svh, 22px); }
+  .craft-intro { top: max(17svh, 112px); }
   .craft-copy { max-width: 80vw; bottom: 17vh; }
   .craft-title { font-size: clamp(30px, 11vw, 60px); }
   .craft-bignum { font-size: 38vw; top: 12vh; }

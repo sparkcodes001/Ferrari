@@ -1,4 +1,5 @@
 import * as THREE from "three";
+import { SPEC, SPEC_LABEL } from "../../data/specs";
 
 // three.js strips "." from node names on import: "Tire.001_22" -> "Tire001_22"
 export const safeName = (name) => THREE.PropertyBinding.sanitizeNodeName(name);
@@ -43,7 +44,7 @@ export const STAGES = [
   { range: [0.3, 0.58], title: "SHELL LIFTED", sub: "ALUMINUM–CARBON MONOCOQUE" },
   { range: [0.58, 0.76], title: "WHEELS SEPARATED", sub: "PIRELLI P ZERO · BREMBO CARBON-CERAMIC" },
   { range: [0.76, 0.92], title: "TRIM REMOVED", sub: "MATRIX LED · SIGNATURE TAIL LIGHT" },
-  { range: [0.92, 1.01], title: "CHASSIS EXPOSED", sub: "V12 · 6.5L · 830CV" },
+  { range: [0.92, 1.01], title: "CHASSIS EXPOSED", sub: SPEC_LABEL },
 ];
 
 export function getStageIndex(progress) {
@@ -91,5 +92,5 @@ export const HOTSPOTS = [
   { node: "Tire.003_30", title: "Pirelli P Zero", sub: "Tyre", range: [0.6, 0.76], side: "r" },
   { node: "Brake_19", title: "Brembo", sub: "Carbon-ceramic", range: [0.62, 0.78], side: "l" },
   { node: "Headlights_17", title: "Matrix LED", sub: "Signature lighting", range: [0.78, 0.94], side: "r" },
-  { node: "Mechanics_6", title: "V12 · 6.5 L", sub: "830 CV", range: [0.93, 1.1], side: "l" },
+  { node: "Mechanics_6", title: `${SPEC.engine} · ${SPEC.displacement}`, sub: `${SPEC.hp} CV`, range: [0.93, 1.1], side: "l" },
 ];

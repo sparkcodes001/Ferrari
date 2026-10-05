@@ -7,29 +7,32 @@ import {
   SoftShadows,
 } from "@react-three/drei";
 import * as THREE from "three";
+import { IS_COARSE } from "../../utils/device";
 
-import { CAR_TARGET, CAM_POSITION } from "../../config/camera";
+import { CAR_TARGET, CAM_POSITION, DESKTOP_FOV, heroFov } from "../../config/camera";
 
 function Scene({ children, debug = false, headlightsOn, active = true }) {
   return (
     <Canvas
       frameloop={active ? "always" : "never"}
       shadows="soft"
-      camera={{ position: CAM_POSITION, fov: 23 }}
+      camera={{ position: CAM_POSITION, fov: DESKTOP_FOV }}
       gl={{
         antialias: true,
         alpha: true,
         toneMapping: THREE.ACESFilmicToneMapping,
         powerPreference: "high-performance",
       }}
-      dpr={[1, 1.5]}
-      onCreated={({ camera, gl }) => {
+      dpr={IS_COARSE ? [1, 1.25] : [1, 1.5]}
+      onCreated={({ camera, gl, size }) => {
+        camera.fov = heroFov(size.width / size.height);
+        camera.updateProjectionMatrix();
         camera.lookAt(CAR_TARGET);
         gl.setClearColor(0x000000, 0);
       }}
     >
       {/* soft, diffused shadow edge. If you ever see artifacts, delete this one line. */}
-      <SoftShadows size={18} samples={12} focus={0.4} />
+      {!IS_COARSE && <SoftShadows size={18} samples={12} focus={0.4} />}
 
       <ambientLight intensity={0.4} />
 
@@ -37,8 +40,8 @@ function Scene({ children, debug = false, headlightsOn, active = true }) {
         position={[6, 14, 5]}
         intensity={1.4}
         castShadow
-        shadow-mapSize-width={2048}
-        shadow-mapSize-height={2048}
+        shadow-mapSize-width={IS_COARSE ? 1024 : 2048}
+        shadow-mapSize-height={IS_COARSE ? 1024 : 2048}
         shadow-camera-near={1}
         shadow-camera-far={40}
         shadow-camera-left={-14}

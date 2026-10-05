@@ -3,6 +3,7 @@ import useScrollProgress from "../../hooks/useScrollProgress";
 import { blip } from "../../utils/engineSound";
 import {
   SPEC,
+  SPEC_LABEL,
   SHEET,
   angleFor,
   dialGeometry,
@@ -108,7 +109,7 @@ export default function Specs() {
         <div className="specs-top">
           <span className="specs-label">( 04 ) — The Numbers</span>
           <span className="specs-label">
-            {SPEC.engine} · {SPEC.displacement} · {SPEC.hp}CV
+            {SPEC_LABEL}
           </span>
         </div>
 

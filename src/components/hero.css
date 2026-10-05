@@ -11,12 +11,14 @@
 
 .hero-root {
   position: relative;
-  height: 280vh; /* was 250vh */
+  height: 280vh;
+  height: 280svh; /* was 250vh */
 }
 .hero-stage {
   position: sticky;
   top: 0;
   height: 100vh;
+  height: var(--sh, 100vh);
   width: 100%;
   overflow: hidden;
   background:
@@ -774,4 +776,132 @@
 @media (max-width: 900px) { .ho-sound em { display: none; } }
 @media (prefers-reduced-motion: reduce) {
   .ho-sound[aria-pressed="true"] .ho-eq i { animation: none; height: 10px; }
+}
+
+/* ───────── fallback shown when WebGL is unavailable ───────── */
+.scene-fb {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 1.4em;
+  padding: 0 8vw;
+  text-align: center;
+  color: #141414;
+  font-family: "Syncopate", "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+.scene-fb.is-dark { color: #efeae0; }
+.scene-fb-mark { width: clamp(90px, 18vw, 180px); height: auto; opacity: 0.9; }
+.scene-fb-mark .ferrari-main { fill: currentColor; }
+.scene-fb-mark .ferrari-highlight { fill: rgba(255, 255, 255, 0.6); }
+.scene-fb-title { margin: 0; font-weight: 700; font-size: clamp(12px, 1.2vw, 20px); letter-spacing: 0.18em; }
+.scene-fb-note {
+  margin: 0;
+  max-width: 34ch;
+  font-family: "Space Mono", monospace;
+  text-transform: none;
+  font-size: clamp(11px, 0.9vw, 15px);
+  letter-spacing: 0.04em;
+  line-height: 1.7;
+  opacity: 0.75;
+}
+
+/* ═════════════════════════════════════════════════════════════
+   MOBILE / PORTRAIT: the hero is rebuilt as three bands.
+   top    : headline + one line of copy
+   middle : the car (framed by heroFov / view offset in HeroCamera)
+   bottom : specs, car selector + counter, scroll cue
+   ═════════════════════════════════════════════════════════════ */
+@media (max-width: 900px) {
+  .ho-nav { top: 2.4svh; left: 6vw; right: 5vw; }
+  .ho-divider,
+  .ho-meta { display: none; }
+  .ho-right { gap: 4vw; }
+  .ho-burger { width: 44px; height: 44px; }
+  .ho-sound { min-height: 44px; min-width: 28px; }
+
+  /* top band */
+  .ho-copy { left: 6vw; right: 6vw; top: 13svh; }
+  .ho-eyebrow { font-size: 10px; letter-spacing: 0.32em; margin-bottom: 0.4svh; }
+  .ho-title { font-size: clamp(22px, 7.4vw, 40px); margin-bottom: 1.2svh; }
+  .ho-sub {
+    font-size: 11.5px;
+    line-height: 1.6;
+    letter-spacing: 0.06em;
+    max-width: 64vw;
+    margin: 0 0 1.8svh;
+  }
+  .ho-sub br { display: none; }
+  .ho-cta { font-size: 10px; gap: 10px; }
+
+  /* bottom band: specs sit in one row above the controls */
+  .ho-specs {
+    left: 6vw;
+    right: 6vw;
+    top: auto;
+    bottom: 16svh;
+    width: auto;
+    display: flex;
+    border-left: 0;
+    padding: 1.4svh 0 0;
+    border-top: 1px solid rgba(20, 20, 20, 0.5);
+  }
+  .ho-spec { flex: 1; }
+  .ho-spec + .ho-spec {
+    margin: 0;
+    padding: 0 0 0 5vw;
+    border-top: 0;
+    border-left: 1px solid rgba(20, 20, 20, 0.35);
+  }
+  .ho-spec-val { font-size: clamp(13px, 4.2vw, 18px); margin-bottom: 0.4svh; }
+  .ho-spec-sub { font-size: 9.5px; letter-spacing: 0.14em; line-height: 1.6; }
+  .ho-spec-sub br { display: none; }
+  .ho-spec-sub span + span::before { content: " · "; }
+
+  .ho-dots {
+    right: auto;
+    left: 6vw;
+    top: auto;
+    bottom: 9svh;
+    flex-direction: row;
+    gap: 16px;
+  }
+  .ho-dot::after { inset: -14px; }
+  .ho-count {
+    left: auto;
+    right: 6vw;
+    top: auto;
+    bottom: 8svh;
+    width: 46vw;
+    text-align: right;
+  }
+  .ho-count small { margin: 0.5svh 0 0.8svh; }
+  .ho-scroll { left: 6vw; bottom: 2.6svh; align-items: center; gap: 10px; }
+  .ho-scroll-line { height: 3.2svh; }
+  .ho-scroll-label { font-size: 9px; }
+
+  /* menu */
+  .ho-menu { padding: 0 7vw; overflow-y: auto; }
+  .ho-menu li a { font-size: clamp(24px, 7.6vw, 56px); gap: 4vw; padding: 1.1svh 0; }
+  .ho-menu li a em { font-size: 10px; }
+
+  /* telemetry (phase 2 of the hero scroll) */
+  .ht-chapters { left: 6vw; top: 13svh; width: 88vw; }
+  .ht-chap-no { font-size: 10px; gap: 10px; }
+  .ht-chap-no span { width: 28px; }
+  .ht-chap-title { font-size: clamp(24px, 8vw, 40px); margin-bottom: 1svh; }
+  .ht-chap-text { max-width: 78vw; font-size: 11.5px; }
+  .ht-speed { left: 6vw; bottom: 9svh; }
+  .ht-speed-num { font-size: clamp(44px, 15vw, 80px); }
+  .ht-speed small { font-size: 10px; }
+  .ht-gear { right: 6vw; top: auto; bottom: 9svh; padding-left: 4vw; }
+  .ht-gear b { font-size: clamp(28px, 9vw, 48px); }
+  .ht-rpm { height: 9svh; }
+}
+
+/* short phones: drop the sub-line so the copy never reaches the car */
+@media (max-width: 900px) and (max-height: 700px) {
+  .ho-sub { display: none; }
 }

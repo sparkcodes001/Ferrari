@@ -70,6 +70,7 @@ export default function HeroOverlay({
 
   return (
     <div className="ho">
+      <h1 className="sr-only">Ferrari: the art of performance</h1>
       <div className="ho-fade" ref={fadeRef}>
         <div className="ho-copy" ref={copyRef}>
           <p className="ho-eyebrow">The Art Of</p>

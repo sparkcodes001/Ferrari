@@ -2,6 +2,7 @@
   --stroke: #141414;
   position: relative;
   height: 230vh;
+  height: 230svh;
   background:
     linear-gradient(
       115deg,
@@ -34,6 +35,7 @@
   position: sticky;
   top: 0;
   height: 100vh;
+  height: var(--sh, 100vh);
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -311,7 +313,10 @@
 @keyframes cta-spin { to { transform: rotate(360deg); } }
 
 @media (max-width: 900px) {
-  .cta-stage { align-items: flex-start; padding-top: 18vh; }
+  .cta-stage { align-items: flex-start; padding-top: max(17svh, 112px); }
+  .cta-top { top: max(9.5svh, 74px); }
+  .cta-bottom { bottom: max(4svh, 22px); }
+  .cta-text-btn { min-height: 44px; }
   .cta-grid { grid-template-columns: 1fr; gap: 2vh; }
   .cta-headline { font-size: clamp(26px, 8vw, 48px); }
   .cta-sub { max-width: 100%; margin-top: 3vh; }

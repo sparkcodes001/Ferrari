@@ -1,6 +1,9 @@
-// Specs section data + dial maths. Plain JS (no React) so it is easy to edit.
-// hp, 0–100 and displacement match the copy already on the site.
-// torque, redline and gear count are PLACEHOLDERS: replace with real figures.
+// SINGLE SOURCE OF TRUTH for the car's numbers.
+// Hero, Engineering labels, Specs dial and the spec sheet all read from here,
+// so editing this one object updates the whole site.
+// Figures are Ferrari's published 12Cilindri numbers (6.5 L V12, 830 CV, 678 Nm,
+// 0-100 in 2.9 s, 340+ km/h, 9,500 rpm limit, 8-speed DCT).
+// If the 3D model is a different car, change ONLY this block.
 export const SPEC = {
   engine: "V12",
   displacement: "6.5 L",
@@ -8,9 +11,10 @@ export const SPEC = {
   nm: 678,
   zeroTo100: 2.9,
   top: 340,
-  redline: 9000,
-  gears: 7,
+  redline: 9500,
+  gears: 8,
 };
+export const SPEC_LABEL = `${SPEC.engine} · ${SPEC.displacement} · ${SPEC.hp} CV`;
 
 export const SHEET = [
   ["Engine", SPEC.engine],

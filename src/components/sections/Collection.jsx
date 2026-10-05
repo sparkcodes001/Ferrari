@@ -13,6 +13,9 @@ export default function Collection() {
   const prev = useRef(null);
   const viewRef = useRef(null);
   const closeBtn = useRef(null);
+  const closeTimer = useRef(0);
+  const lastFocus = useRef(null);
+  const touchX = useRef(null);
   const rows = useRef([]);
   const mouse = useRef({ x: 0, y: 0 });
   const pos = useRef({ x: 0, y: 0, r: 0 });
@@ -65,14 +68,21 @@ export default function Collection() {
 
   const close = useCallback(() => {
     setView((v) => v && { ...v, on: false });
-    setTimeout(() => setView(null), 800);
+    clearTimeout(closeTimer.current);
+    closeTimer.current = setTimeout(() => {
+      setView(null);
+      lastFocus.current?.focus?.({ preventScroll: true });
+    }, 800);
   }, []);
+  useEffect(() => () => clearTimeout(closeTimer.current), []);
   const step = useCallback((d) => {
     blip(260, 0.08, 0.05);
     setView((v) => v && { ...v, i: (v.i + d + N) % N });
   }, []);
 
   const openView = (i, e) => {
+    clearTimeout(closeTimer.current); // a quick re-open must not be closed by the old timer
+    lastFocus.current = document.activeElement;
     blip(300, 0.1, 0.06);
     setView({
       i,
@@ -92,6 +102,19 @@ export default function Collection() {
       if (e.key === "Escape") close();
       if (e.key === "ArrowRight") step(1);
       if (e.key === "ArrowLeft") step(-1);
+      if (e.key === "Tab" && el) {
+        const f = el.querySelectorAll("button");
+        if (!f.length) return;
+        const first = f[0];
+        const last = f[f.length - 1];
+        if (e.shiftKey && document.activeElement === first) {
+          e.preventDefault();
+          last.focus();
+        } else if (!e.shiftKey && document.activeElement === last) {
+          e.preventDefault();
+          first.focus();
+        }
+      }
     };
     const stop = (e) => e.preventDefault();
     const el = viewRef.current;
@@ -108,6 +131,16 @@ export default function Collection() {
       window.removeEventListener("keydown", onKey);
     };
   }, [isOpen, close, step]);
+
+  // warm the neighbours so Prev / Next never show a blank frame
+  const curIndex = view ? view.i : -1;
+  useEffect(() => {
+    if (curIndex < 0) return;
+    [1, -1].forEach((d) => {
+      const img = new Image();
+      img.src = COLLECTION[(curIndex + d + N) % N].full;
+    });
+  }, [curIndex]);
 
   const cur = view ? COLLECTION[view.i] : null;
 
@@ -177,6 +210,15 @@ export default function Collection() {
           className={`coll-view${view.on ? " is-on" : ""}`}
           style={{ "--x": `${view.x}px`, "--y": `${view.y}px` }}
           data-lenis-prevent
+          onTouchStart={(e) => {
+            touchX.current = e.touches[0].clientX;
+          }}
+          onTouchEnd={(e) => {
+            if (touchX.current === null) return;
+            const dx = e.changedTouches[0].clientX - touchX.current;
+            touchX.current = null;
+            if (Math.abs(dx) > 50) step(dx < 0 ? 1 : -1);
+          }}
           role="dialog"
           aria-modal="true"
           aria-label={cur.name}

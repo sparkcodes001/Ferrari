@@ -18,10 +18,13 @@ function App() {
 
   return (
     <>
+      <a className="skip-link" href="#main">
+        Skip to content
+      </a>
       {isLoading && <Preloader />}
       <Navbar />
       <SoundController />
-      <main>
+      <main id="main" tabIndex={-1}>
         <Hero />
         <Intro />
         <Engineering />

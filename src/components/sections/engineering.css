@@ -57,7 +57,11 @@
   letter-spacing: 0.2em;
   color: rgba(239, 234, 224, 0.55);
 }
+
+/* phones: keep the part labels, just smaller and tighter to the dot */
 @media (max-width: 768px) {
-  .hs-text { display: none; }
-  .hs-line { width: 40px; }
+  .hs-text { display: flex; top: -40px; left: calc(var(--dir) * 26px); gap: 2px; }
+  .hs-text b { font-size: 9px; letter-spacing: 0.1em; }
+  .hs-text small { font-size: 7.5px; letter-spacing: 0.14em; }
+  .hs-line { width: 30px; }
 }

@@ -4,11 +4,13 @@ import { useFrame, useThree } from "@react-three/fiber";
 import * as THREE from "three";
 import { carTrack } from "./carTrack";
 import useStore from "../../store/useStore";
+import { CAM_POSITION, heroFov } from "../../config/camera";
 
 const WORD = "FERRARI";
 const FONT_SIZE = 5.5;
 const GAP = FONT_SIZE * 0.07;
 const BLEED = 1.06;
+const BLEED_PORTRAIT = 0.98; // on phones the whole word must be readable: no crop
 
 /* ── car-pass reaction (tune these) ── */
 const SINK_DEPTH = 2.2; // how far a letter drops when the car is over it
@@ -98,8 +100,6 @@ function Letter({ char, index, x, onMeasure }) {
 }
 
 function HeroText({ position = [-8, 0.082, 2.6] }) {
-  const camera = useThree((s) => s.camera);
-  const viewport = useThree((s) => s.viewport);
   const size = useThree((s) => s.size);
   const letters = WORD.split("");
 
@@ -132,15 +132,20 @@ function HeroText({ position = [-8, 0.082, 2.6] }) {
     // eslint-disable-next-line
   }, [ready, bounds]);
 
+  // Width of the view at the text's distance, using the SAME fov the hero
+  // camera settles on (desktop 23°, wider on portrait screens). Measured against
+  // the final pose, not the entrance pose.
   const scale = useMemo(() => {
     if (!layout) return 1;
-    const vp = viewport.getCurrentViewport(
-      camera,
+    const aspect = size.width / size.height;
+    const fov = THREE.MathUtils.degToRad(heroFov(aspect));
+    const dist = new THREE.Vector3(...CAM_POSITION).distanceTo(
       new THREE.Vector3(position[0], position[1], position[2]),
     );
-    return (vp.width * BLEED) / layout.total;
+    const width = 2 * Math.tan(fov / 2) * dist * aspect;
+    return (width * (aspect < 0.9 ? BLEED_PORTRAIT : BLEED)) / layout.total;
     // eslint-disable-next-line
-  }, [layout, viewport, camera, size, position[0], position[1], position[2]]);
+  }, [layout, size, position[0], position[1], position[2]]);
 
   return (
     <group
