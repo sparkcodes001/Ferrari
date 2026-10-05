@@ -3,7 +3,7 @@ import gsap from "gsap";
 import "../hero.css";
 import FerrariLogo from "./FerrariLogo";
 import useStore from "../../store/useStore";
-import { scrollToTarget } from "../../hooks/useLenis";
+import { scrollToTarget, lockScroll, unlockScroll } from "../../hooks/useLenis";
 import { applySound, blip } from "../../utils/engineSound";
 
 const LINKS = [
@@ -81,41 +81,49 @@ export default function Navbar() {
     if (!open) return;
     const onKey = (e) => e.key === "Escape" && setOpen(false);
     window.addEventListener("keydown", onKey);
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockScroll();
     return () => {
       window.removeEventListener("keydown", onKey);
-      document.body.style.overflow = prev;
+      unlockScroll();
     };
   }, [open]);
 
-  // flip color scheme based on whichever section is under the navbar
+  // flip color scheme based on whichever [data-nav] section is under the navbar
   useEffect(() => {
     const sections = Array.from(document.querySelectorAll("[data-nav]"));
     if (!sections.length) return;
 
-    let ticking = false;
     const probeY = 80; // just under the fixed navbar
-
-    const update = () => {
-      const el = document.elementFromPoint(window.innerWidth / 2, probeY);
-      const match = el?.closest("[data-nav]");
-      setLight(match ? match.dataset.nav === "light" : false);
-      ticking = false;
+    const hit = new Set();
+    const pick = () => {
+      let top = null;
+      for (const s of sections) if (hit.has(s)) top = s; // later sections paint over earlier ones
+      setLight(top ? top.dataset.nav === "light" : false);
     };
 
-    const onScroll = () => {
-      if (ticking) return;
-      ticking = true;
-      requestAnimationFrame(update);
+    let io;
+    const build = () => {
+      io?.disconnect();
+      hit.clear();
+      const bottom = Math.max(0, window.innerHeight - probeY - 2);
+      io = new IntersectionObserver(
+        (entries) => {
+          entries.forEach((e) => (e.isIntersecting ? hit.add(e.target) : hit.delete(e.target)));
+          pick();
+        },
+        { rootMargin: "-" + probeY + "px 0px -" + bottom + "px 0px", threshold: 0 },
+      );
+      sections.forEach((s) => io.observe(s));
     };
+    build();
 
-    update();
-    window.addEventListener("scroll", onScroll, { passive: true });
-    window.addEventListener("resize", onScroll);
+    const mo = new MutationObserver(pick);
+    mo.observe(document.body, { attributes: true, attributeFilter: ["data-nav"], subtree: true });
+    window.addEventListener("resize", build);
     return () => {
-      window.removeEventListener("scroll", onScroll);
-      window.removeEventListener("resize", onScroll);
+      io?.disconnect();
+      mo.disconnect();
+      window.removeEventListener("resize", build);
     };
   }, []);
 

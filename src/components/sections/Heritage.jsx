@@ -19,15 +19,19 @@ const ACCENTS = ["#ffcd00", "#da291c", "#c9a84c", "#f0f0f0", "#4ecdc4", "#da291c
 // Per-era fact chips
 const FACTS = [
   ["12 cylinders", "First race · 1947", "Born in Maranello"],
-  ["Every F1 season", "14 Constructor titles", "Chassis 125 S"],
-  ["39 built", "$70 M+ at auction", "GT class legend"],
-  ["200 km/h in 5 s", "No radio, no AC", "Enzo\'s last gift"],
+  ["Every F1 season", "16 Constructor titles", "Chassis 125 S"],
+  ["36 built", "$70 M+ at auction", "GT class legend"],
+  ["Twin-turbo V8", "No radio, no AC", "Enzo\'s last gift"],
   ["963 CV total", "HY-KERS hybrid", "499 made"],
   ["Next-gen V12", "Hybrid future", "Still Maranello"],
 ];
 
 const lerp = (a, b, t) => a + (b - a) * t;
 const clamp01 = (x) => Math.min(1, Math.max(0, x));
+const smooth01 = (x) => {
+  const t = clamp01(x);
+  return t * t * (3 - 2 * t);
+};
 
 export default function Heritage() {
   const sectionRef    = useRef(null);
@@ -44,27 +48,29 @@ export default function Heritage() {
   const bgLayersRef   = useRef([]);
   const glowRef       = useRef(null);
   const activeEraRef  = useRef(-1);
+  const ghostRef      = useRef(null);
 
   useEffect(() => {
     const ctx = gsap.context(() => {
       ScrollTrigger.create({
         trigger: sectionRef.current,
         start: "top top",
-        end: `+=${(N - 1) * 100}vh`,
+        end: `+=${N * 100}vh`,
         pin: true,
         scrub: 1,
         anticipatePin: 0,
         invalidateOnRefresh: true,
         onUpdate(self) {
           const p = self.progress;                       // 0 → 1
-          const raw = p * (N - 1);                       // 0 → N-1 (float)
-          const idx  = Math.min(N - 1, Math.floor(raw)); // era index
-          const frac = raw - idx;                        // 0-1 within era
+          const seg  = p * N;                            // 0 → N: every era owns an equal slice of the pin
+          const idx  = Math.min(N - 1, Math.floor(seg)); // era index
+          const frac = seg - idx;                        // 0-1 within era
           const nxt  = Math.min(N - 1, idx + 1);
+          const raw  = Math.max(0, Math.min(N - 1, seg - 0.5)); // era i centred on raw = i (bg crossfade)
 
           // ── Kinetic year counter (interpolated between eras) ──
           if (yearRef.current)
-            yearRef.current.textContent = Math.round(lerp(YEARS[idx], YEARS[nxt], frac));
+            yearRef.current.textContent = Math.round(lerp(YEARS[idx], YEARS[nxt], smooth01((frac - 0.6) / 0.4)));
 
           // ── Progress bar ──
           if (barRef.current)
@@ -108,6 +114,7 @@ export default function Heritage() {
             const facts  = FACTS[idx];
 
             sectionRef.current?.style.setProperty("--era-accent", accent);
+            if (ghostRef.current) ghostRef.current.textContent = String(idx + 1).padStart(2, "0");
 
             const swapEls = [noRef.current, tagRef.current, titleRef.current, textRef.current];
             gsap.killTweensOf([...swapEls, ...factsRef.current]);
@@ -196,7 +203,7 @@ export default function Heritage() {
             <i ref={accentLineRef} className="herv2-accent-fill" />
           </div>
 
-          <p className="herv2-era-large" aria-hidden="true">0{1}</p>
+          <p className="herv2-era-large" aria-hidden="true" ref={ghostRef}>01</p>
         </div>
 
         {/* Right — copy */}

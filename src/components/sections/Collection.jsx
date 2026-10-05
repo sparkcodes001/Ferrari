@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { COLLECTION } from "../../data/collection";
 import { blip } from "../../utils/engineSound";
+import { lockScroll, unlockScroll } from "../../hooks/useLenis";
 import "./collection.css";
 
 const N = COLLECTION.length;
@@ -118,14 +119,13 @@ export default function Collection() {
     };
     const stop = (e) => e.preventDefault();
     const el = viewRef.current;
-    const prevOv = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
+    lockScroll();
     el?.addEventListener("wheel", stop, { passive: false });
     el?.addEventListener("touchmove", stop, { passive: false });
     window.addEventListener("keydown", onKey);
     closeBtn.current?.focus();
     return () => {
-      document.body.style.overflow = prevOv;
+      unlockScroll();
       el?.removeEventListener("wheel", stop);
       el?.removeEventListener("touchmove", stop);
       window.removeEventListener("keydown", onKey);

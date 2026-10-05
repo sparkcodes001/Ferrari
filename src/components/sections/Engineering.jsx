@@ -10,7 +10,7 @@ import { STAGES, HOTSPOTS, getStageIndex } from "../canvas/explodeConfig";
 import { hasWebGL } from "../../utils/webgl";
 import { SPEC_LABEL } from "../../data/specs";
 import "./engineering.css";
-import useInView from "../../hooks/useInView";
+
 
 gsap.registerPlugin(ScrollTrigger);
 
@@ -45,7 +45,17 @@ function Engineering() {
   }, []);
 
   // frameloop pause/resume based on viewport visibility (only matters once mounted)
-  const [canvasRef, inView] = useInView({ rootMargin: "20% 0px 20% 0px" });
+  const [inView, setInView] = useState(true);
+  useEffect(() => {
+    const el = sectionRef.current;
+    if (!el) return;
+    const io = new IntersectionObserver(
+      ([entry]) => setInView(entry.isIntersecting),
+      { rootMargin: "20% 0px 20% 0px" },
+    );
+    io.observe(el);
+    return () => io.disconnect();
+  }, []);
 
   const [gl] = useState(() => hasWebGL());
 
@@ -59,7 +69,7 @@ function Engineering() {
         // BUG FIX: removed `anticipatePin: 1` — it causes redundant layout
         // recalculations that stutter the moment you enter the section.
         pin: true,
-        scrub: 0.8,           // smooth scrub instead of instant (was `true`)
+        scrub: true, // Lenis + damp() in EngineeringCar already smooth this
         onUpdate: (self) => {
           progressRef.current = self.progress;
 
@@ -127,8 +137,12 @@ function Engineering() {
           }
         >
           <Canvas
-            ref={canvasRef}
             frameloop={inView ? "always" : "never"}
+            // pinned canvas: don't re-measure on scroll (a 1px change wipes the buffer)
+            resize={{ scroll: false }}
+            onCreated={({ gl }) =>
+              gl.domElement.addEventListener("webglcontextlost", (e) => e.preventDefault())
+            }
             shadows
             gl={{
               antialias: true,

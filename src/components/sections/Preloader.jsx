@@ -21,6 +21,7 @@ import FerrariLogo from "../ui/FerrariLogo";
 import { strokeUnits, pad3 } from "../../utils/logoDraw";
 import { applySound, startEngine, setRev, flyBy } from "../../utils/engineSound";
 import { primeBed } from "../../utils/bed";
+import { SPEC } from "../../data/specs";
 
 // ── Constants ─────────────────────────────────────────────────────────────────
 const MIN_TIME   = 2.4;   // seconds to animate 0 → 90 %
@@ -37,18 +38,18 @@ const STATUS_STEPS = [
 ];
 
 const DATA_LINES = [
-  { val: "V12",        lbl: "ENGINE CONFIG"  },
-  { val: "6.5 L",      lbl: "DISPLACEMENT"   },
-  { val: "830 CV",     lbl: "POWER OUTPUT"   },
-  { val: "678 Nm",     lbl: "MAX TORQUE"     },
-  { val: "9500 RPM",   lbl: "REDLINE"        },
-  { val: "2.9 s",      lbl: "0 – 100 KM/H"  },
-  { val: "340 KM/H",   lbl: "V MAX"          },
-  { val: "F163AL",     lbl: "ENGINE CODE"    },
-  { val: "Carbon",     lbl: "BODY PANELS"    },
-  { val: "E-DIFF 3.0", lbl: "DIFFERENTIAL"  },
-  { val: "Brembo CCM", lbl: "BRAKE SYSTEM"  },
-  { val: "P ZERO",     lbl: "TYRE SPEC"     },
+  { val: SPEC.engine,                  lbl: "ENGINE CONFIG"  },
+  { val: SPEC.displacement,            lbl: "DISPLACEMENT"   },
+  { val: SPEC.hp + " CV",              lbl: "POWER OUTPUT"   },
+  { val: SPEC.nm + " Nm",              lbl: "MAX TORQUE"     },
+  { val: SPEC.redline + " RPM",        lbl: "REDLINE"        },
+  { val: SPEC.zeroTo100 + " s",        lbl: "0 – 100 KM/H"  },
+  { val: SPEC.top + " KM/H",           lbl: "V MAX"          },
+  { val: SPEC.gears + "-SPEED DCT",    lbl: "TRANSMISSION"   },
+  { val: "Carbon",                     lbl: "BODY PANELS"    },
+  { val: "E-DIFF 3.0",                 lbl: "DIFFERENTIAL"  },
+  { val: "Brembo CCM",                 lbl: "BRAKE SYSTEM"  },
+  { val: "P ZERO",                     lbl: "TYRE SPEC"     },
 ];
 
 // ── SVG Rev-Counter geometry ──────────────────────────────────────────────────
@@ -322,7 +323,7 @@ function Preloader() {
       {/* ── Header ──────────────────────────────────────────────────────────── */}
       <header
         data-ui
-        className="relative z-20 flex items-center justify-between px-6 pt-[max(1.4rem,env(safe-area-inset-top))] font-mono text-[9px] tracking-[0.38em] text-white/28 md:px-10 md:pt-8"
+        className="relative z-20 flex items-center justify-between px-6 pt-[max(1.4rem,env(safe-area-inset-top))] font-mono text-[9px] tracking-[0.38em] text-white/30 md:px-10 md:pt-8"
       >
         <span>SCUDERIA FERRARI</span>
         <span className="hidden md:block text-white/15">FERRARI · 12CILINDRI</span>
@@ -490,7 +491,7 @@ function Preloader() {
           className="absolute right-6 top-1/2 hidden -translate-y-1/2 flex-col md:right-10 lg:flex"
           style={{ width: "clamp(100px,10vw,150px)" }}
         >
-          <p className="mb-3 font-mono text-[7px] tracking-[0.42em] text-white/18 uppercase">
+          <p className="mb-3 font-mono text-[7px] tracking-[0.42em] text-white/20 uppercase">
             VEHICLE DATA
           </p>
           <div className="overflow-hidden" style={{ height: "34vh" }}>
@@ -573,14 +574,14 @@ function Preloader() {
             tabIndex={open ? 0 : -1}
             disabled={!open}
             onClick={() => choose(false)}
-            className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/40 underline decoration-white/18 underline-offset-8 transition-colors hover:text-white/70"
+            className="font-mono text-[10px] uppercase tracking-[0.3em] text-white/40 underline decoration-white/20 underline-offset-8 transition-colors hover:text-white/70"
           >
             Enter silent
           </button>
 
           {/* Countdown */}
           {open && (
-            <div className="font-mono text-[9px] tracking-[0.3em] text-white/22 md:ml-auto">
+            <div className="font-mono text-[9px] tracking-[0.3em] text-white/25 md:ml-auto">
               AUTO IN{" "}
               <span className="text-white/45">{Math.max(left, 0)}s</span>
             </div>

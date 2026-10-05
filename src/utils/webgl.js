@@ -4,10 +4,11 @@ export function hasWebGL() {
   if (cached !== null) return cached;
   try {
     const c = document.createElement("canvas");
-    cached = !!(
-      window.WebGLRenderingContext &&
-      (c.getContext("webgl2") || c.getContext("webgl"))
-    );
+    const gl = c.getContext("webgl2") || c.getContext("webgl");
+    cached = !!(window.WebGLRenderingContext && gl);
+    // Release the probe context right away: browsers cap live contexts (~16)
+    // and this site already runs two canvases.
+    gl?.getExtension("WEBGL_lose_context")?.loseContext();
   } catch {
     cached = false;
   }

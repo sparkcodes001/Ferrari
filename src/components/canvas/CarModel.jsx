@@ -6,6 +6,7 @@ import * as THREE from "three";
 import { carTrack } from "./carTrack";
 import { HOVER_EXPLODE_MAP, safeName } from "./explodeConfig";
 import { HERO_SCROLL_VIEWPORTS } from "../../config/scroll";
+import { IS_COARSE } from "../../utils/device";
 
 
 /* ───────────── Drive / wheel settings ───────────── */
@@ -279,7 +280,7 @@ function CarModel({ url = "/models/ferrari.glb", paint = null, ...props }) {
       carTrack.offset.copy(centre).sub(o).setY(0);
       const sz = fbox.getSize(new THREE.Vector3());
       carTrack.radius = Math.max(sz.x, sz.z) * 0.35;
-      carTrack.ready = true;
+      carTrack.ready = false; // switched on by useFrame after the first position is published
     }
 
     /* ── paint setup ── */
@@ -348,7 +349,10 @@ function CarModel({ url = "/models/ferrari.glb", paint = null, ...props }) {
     }
 
 
-    return () => clones.forEach((c) => c.dispose());
+    return () => {
+      carTrack.ready = false;
+      clones.forEach((c) => c.dispose());
+    };
   }, [scene]);
 
   // Start a sweep whenever the paint prop changes
@@ -383,6 +387,7 @@ function CarModel({ url = "/models/ferrari.glb", paint = null, ...props }) {
     if (groupRef.current) {
       groupRef.current.getWorldPosition(carTrack.pos);
       carTrack.pos.add(carTrack.offset);
+      carTrack.ready = true;
     }
 
     // ── Smooth scroll ──
@@ -441,6 +446,7 @@ function CarModel({ url = "/models/ferrari.glb", paint = null, ...props }) {
       {...props}
       onPointerEnter={(e) => {
         e.stopPropagation();
+        if (IS_COARSE) return; // no hover-explode on touch
         setHovered(true);
         document.body.style.cursor = "pointer";
       }}

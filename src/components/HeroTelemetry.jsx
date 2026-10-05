@@ -1,9 +1,10 @@
 import { useEffect, useRef } from "react";
 import "./hero.css";
 import { HERO_SCROLL_VIEWPORTS } from "../config/scroll";
+import { SPEC } from "../data/specs";
 /* Speed at which the readout hits the car's top speed (progress per second) */
 const FULL_SPEED_AT = 0.55;
-const GEARS = 7;
+const GEARS = SPEC.gears; // was hard-coded 7 while the Specs section showed 8
 
 /* p = scroll progress 0→1 over the car's drive. Edit the copy freely. */
 const CHAPTERS = [
@@ -36,16 +37,21 @@ export default function HeroTelemetry({ car }) {
   const gearEl = useRef(null);
   const rpmEl = useRef(null);
   const chapEls = useRef([]);
-  const topSpeed = useRef(340);
-  topSpeed.current = car.topSpeed ?? 340;
+  const topSpeed = useRef(SPEC.top);
+  topSpeed.current = car.topSpeed ?? SPEC.top;
 
   useEffect(() => {
+    const rootEl = root.current;
     let target = 0;
     let cur = 0;
     let prev = 0;
     let speed = 0; // smoothed 0..1
     let last = performance.now();
-    let raf;
+    let raf = 0;
+    let running = false;
+
+    // last values written to the DOM, so unchanged frames cost nothing
+    const w = { vis: "", kmh: -1, gear: "", rpm: "", chap: [] };
 
     const onScroll = () => {
       target = clamp01(
@@ -68,23 +74,30 @@ export default function HeroTelemetry({ car }) {
 
       // whole HUD: in after the hero copy fades, out before the stage ends
       const vis = smooth(0.18, 0.32, cur);
-      const r = root.current;
-      if (r) {
-        r.style.opacity = vis.toFixed(3);
-        r.style.visibility = vis <= 0.001 ? "hidden" : "visible";
+      const visStr = vis.toFixed(3);
+      if (rootEl && w.vis !== visStr) {
+        w.vis = visStr;
+        rootEl.style.opacity = visStr;
+        rootEl.style.visibility = vis <= 0.001 ? "hidden" : "visible";
       }
 
       // speed / gear / rpm
       const kmh = Math.round(speed * topSpeed.current);
-      if (speedEl.current)
+      if (speedEl.current && w.kmh !== kmh) {
+        w.kmh = kmh;
         speedEl.current.textContent = String(kmh).padStart(3, "0");
+      }
       const g = speed * GEARS;
       const gear = kmh < 3 ? "N" : String(Math.min(GEARS, Math.floor(g) + 1));
-      if (gearEl.current && gearEl.current.textContent !== gear)
+      if (gearEl.current && w.gear !== gear) {
+        w.gear = gear;
         gearEl.current.textContent = gear;
-      const rpm = kmh < 3 ? 0.08 : 0.25 + 0.75 * (g % 1);
-      if (rpmEl.current)
-        rpmEl.current.style.transform = `scaleY(${rpm.toFixed(3)})`;
+      }
+      const rpm = (kmh < 3 ? 0.08 : 0.25 + 0.75 * (g % 1)).toFixed(3);
+      if (rpmEl.current && w.rpm !== rpm) {
+        w.rpm = rpm;
+        rpmEl.current.style.transform = `scaleY(${rpm})`;
+      }
 
       // chapters
       CHAPTERS.forEach((c, i) => {
@@ -93,17 +106,41 @@ export default function HeroTelemetry({ car }) {
         const inn = smooth(c.from, c.from + 0.07, cur);
         const out = 1 - smooth(c.to - 0.07, c.to, cur);
         const o = Math.min(inn, out);
-        el.style.opacity = o.toFixed(3);
-        el.style.transform = `translateY(${(1 - inn) * 26 - (1 - out) * 26}px)`;
+        const oStr = o.toFixed(3);
+        const y = ((1 - inn) * 26 - (1 - out) * 26).toFixed(1);
+        const key = oStr + "|" + y;
+        if (w.chap[i] === key) return;
+        w.chap[i] = key;
+        el.style.opacity = oStr;
+        el.style.transform = `translateY(${y}px)`;
         el.style.visibility = o <= 0.001 ? "hidden" : "visible";
       });
 
       raf = requestAnimationFrame(tick);
     };
-    raf = requestAnimationFrame(tick);
+
+    // only animate while the hero is (nearly) on screen
+    const start = () => {
+      if (running) return;
+      running = true;
+      cur = prev = target; // snap: we may have been asleep while the page scrolled
+      speed = 0;
+      last = performance.now();
+      raf = requestAnimationFrame(tick);
+    };
+    const stop = () => {
+      running = false;
+      cancelAnimationFrame(raf);
+    };
+    const io = new IntersectionObserver(
+      ([e]) => (e.isIntersecting ? start() : stop()),
+      { rootMargin: "200px 0px 200px 0px" },
+    );
+    io.observe(rootEl);
 
     return () => {
-      cancelAnimationFrame(raf);
+      io.disconnect();
+      stop();
       window.removeEventListener("scroll", onScroll);
     };
   }, []);
