@@ -126,6 +126,7 @@ main:focus         { outline: none; }
 
 /* Isolate stacking context on full-screen overlay sections. */
 #craft,
+#aero,
 #models,
 #heritage,
 #dealer {

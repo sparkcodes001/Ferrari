@@ -107,7 +107,7 @@ export default function Specs() {
     <section className="specs" id="specs" ref={sec} data-nav="light">
       <div className="specs-stage" ref={stage}>
         <div className="specs-top">
-          <span className="specs-label">( 04 ) — The Numbers</span>
+          <span className="specs-label">( 05 ) — The Numbers</span>
           <span className="specs-label">
             {SPEC_LABEL}
           </span>

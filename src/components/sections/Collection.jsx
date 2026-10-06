@@ -156,7 +156,7 @@ export default function Collection() {
       }}
     >
       <div className="coll-head">
-        <span className="coll-label">( 05 ) — The Collection</span>
+        <span className="coll-label">( 06 ) — The Collection</span>
         <h2 className="coll-title">
           <span>Ten cars.</span>
           <span>One obsession.</span>

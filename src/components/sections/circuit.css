@@ -1,0 +1,163 @@
+.circ {
+  position: relative;
+  height: 620vh;
+  height: 620svh;
+  background: #080706;
+  color: #efeae0;
+  font-family: "Syncopate", "Segoe UI", sans-serif;
+  text-transform: uppercase;
+}
+.circ-stage {
+  position: sticky;
+  top: 0;
+  height: 100vh;
+  height: var(--sh, 100vh);
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse 60% 55% at 50% 50%, rgba(218, 41, 28, 0.08), transparent 70%),
+    #080706;
+}
+.circ-map { position: absolute; inset: 0; width: 100%; height: 100%; display: block; }
+.circ-shade {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(to top, rgba(8, 7, 6, 0.85) 0%, transparent 38%),
+    radial-gradient(ellipse at center, transparent 50%, rgba(0, 0, 0, 0.55) 100%);
+}
+
+/* track */
+.circ-kerb { fill: none; stroke: rgba(239, 234, 224, 0.22); stroke-width: 36; stroke-linejoin: round; stroke-linecap: round; }
+.circ-road { fill: none; stroke: #17171a; stroke-width: 30; stroke-linejoin: round; stroke-linecap: round; }
+.circ-centre { fill: none; stroke: rgba(239, 234, 224, 0.16); stroke-width: 1.5; stroke-dasharray: 7 12; }
+.circ-run {
+  fill: none;
+  stroke: #da291c;
+  stroke-width: 7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.circ-run-glow {
+  fill: none;
+  stroke: rgba(255, 60, 40, 0.28);
+  stroke-width: 18;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.circ-start { stroke: #efeae0; stroke-width: 4; }
+
+.circ-corner circle { fill: #0a0908; stroke: rgba(239, 234, 224, 0.4); stroke-width: 1.2; transition: fill 0.3s ease, stroke 0.3s ease; }
+.circ-corner text {
+  fill: rgba(239, 234, 224, 0.75);
+  font-family: "Space Mono", monospace;
+  font-size: 9px;
+  text-anchor: middle;
+  letter-spacing: 0.04em;
+}
+.circ-corner.is-near circle { fill: #da291c; stroke: #da291c; }
+.circ-corner.is-near text { fill: #fff; }
+
+.circ-car path { fill: #efeae0; stroke: #080706; stroke-width: 1.5; stroke-linejoin: round; }
+.circ-car-glow { fill: rgba(255, 70, 50, 0.22); }
+
+/* labels + headline */
+.circ-top {
+  position: absolute;
+  top: 12vh;
+  left: 4vw;
+  right: 4vw;
+  display: flex;
+  justify-content: space-between;
+  pointer-events: none;
+}
+.circ-label,
+.circ-tag {
+  font-family: "Space Mono", monospace;
+  font-size: clamp(8px, 0.68vw, 13px);
+  letter-spacing: 0.22em;
+  color: rgba(239, 234, 224, 0.6);
+}
+.circ-intro { position: absolute; top: 19vh; left: 4vw; right: 4vw; pointer-events: none; will-change: opacity, transform; }
+.circ-headline { margin: 0; font-weight: 700; font-size: clamp(28px, 5.6vw, 112px); line-height: 1.06; letter-spacing: -0.01em; }
+.circ-headline span { display: block; }
+.circ-headline span:last-child { color: transparent; -webkit-text-stroke: 1.5px #efeae0; }
+
+/* corner call-out */
+.circ-callout {
+  position: absolute;
+  left: 4vw;
+  bottom: 31vh;
+  padding: 1.6vh 1.4vw;
+  border-left: 2px solid #da291c;
+  background: rgba(10, 9, 8, 0.6);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  transform: translateY(12px);
+  transition: opacity 0.4s ease, transform 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+  pointer-events: none;
+}
+.circ-callout.is-on { opacity: 1; transform: none; }
+.circ-callout p { margin: 0 0 0.6vh; font-family: "Space Mono", monospace; font-size: clamp(9px, 0.8vw, 14px); letter-spacing: 0.3em; color: #da291c; }
+.circ-callout h3 { margin: 0 0 0.8vh; font-weight: 700; font-size: clamp(16px, 1.9vw, 36px); line-height: 1.05; }
+.circ-callout small { font-family: "Space Mono", monospace; font-size: clamp(9px, 0.75vw, 13px); letter-spacing: 0.14em; color: rgba(239, 234, 224, 0.7); }
+
+/* telemetry, bottom-left */
+.circ-tele { position: absolute; left: 4vw; bottom: 14vh; pointer-events: none; }
+.circ-speed { display: flex; align-items: baseline; gap: 1vw; }
+.circ-speed span { font-weight: 700; font-size: clamp(48px, 7vw, 140px); line-height: 0.95; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
+.circ-speed small { font-family: "Space Mono", monospace; font-size: clamp(10px, 0.85vw, 15px); letter-spacing: 0.2em; color: rgba(239, 234, 224, 0.6); }
+.circ-mini-row { display: flex; gap: 3vw; margin-top: 1.6vh; }
+.circ-mini-row div { display: flex; flex-direction: column; gap: 0.6vh; }
+.circ-mini-row b { font-weight: 700; font-size: clamp(20px, 2.4vw, 46px); line-height: 1; font-variant-numeric: tabular-nums; }
+
+/* minimap, lap time, pedals: bottom-right */
+.circ-right {
+  position: absolute;
+  right: 4vw;
+  bottom: 14vh;
+  display: grid;
+  grid-template-columns: auto auto;
+  align-items: end;
+  gap: 1.2vh 1.6vw;
+  pointer-events: none;
+}
+.circ-minimap { grid-column: 1 / -1; justify-self: end; width: clamp(130px, 15vw, 270px); height: auto; overflow: visible; }
+.cm-road { fill: none; stroke: rgba(239, 234, 224, 0.28); stroke-width: 7; stroke-linejoin: round; stroke-linecap: round; }
+.cm-run { fill: none; stroke: #da291c; stroke-width: 9; stroke-linecap: round; stroke-linejoin: round; }
+.cm-dot { fill: #efeae0; stroke: #da291c; stroke-width: 6; }
+.circ-lap { display: flex; flex-direction: column; gap: 0.6vh; text-align: right; }
+.circ-lap > span:first-child { font-weight: 700; font-size: clamp(18px, 2.2vw, 42px); font-variant-numeric: tabular-nums; }
+.circ-pedals { display: flex; gap: 0.8vw; }
+.circ-pedals div { position: relative; display: flex; flex-direction: column; align-items: center; gap: 0.6vh; }
+.circ-pedals i {
+  display: block;
+  width: 5px;
+  height: clamp(36px, 7vh, 80px);
+  background: #efeae0;
+  transform-origin: bottom;
+  transform: scaleY(0.03);
+}
+.circ-pedals .is-brake i { background: #da291c; }
+
+/* speed trace */
+.circ-trace { position: absolute; left: 50%; bottom: 8.6vh; width: min(34vw, 560px); height: 7vh; transform: translateX(-50%); overflow: visible; pointer-events: none; }
+.circ-trace path { fill: none; stroke: rgba(239, 234, 224, 0.7); stroke-width: 1.6; vector-effect: non-scaling-stroke; }
+.circ-trace line { stroke: #da291c; stroke-width: 1; vector-effect: non-scaling-stroke; }
+
+.circ-rail { position: absolute; left: 4vw; right: 4vw; bottom: 6vh; height: 1px; background: rgba(239, 234, 224, 0.2); }
+.circ-rail i { display: block; height: 100%; background: #da291c; transform-origin: left; transform: scaleX(0); }
+
+@media (max-width: 900px) {
+  .circ-top { top: max(9.5svh, 74px); left: 6vw; right: 6vw; }
+  .circ-top .circ-label:last-child { display: none; }
+  .circ-intro { top: max(17svh, 112px); left: 6vw; right: 6vw; }
+  .circ-headline { font-size: clamp(24px, 8.2vw, 44px); }
+  .circ-callout { left: 6vw; right: 6vw; bottom: auto; top: max(15svh, 104px); }
+  .circ-tele { left: 6vw; bottom: max(9svh, 60px); }
+  .circ-speed span { font-size: clamp(44px, 15vw, 80px); }
+  .circ-right { right: 6vw; bottom: max(9svh, 60px); }
+  .circ-minimap { width: 24vw; }
+  .circ-pedals, .circ-trace { display: none; }
+  .circ-rail { left: 6vw; right: 6vw; bottom: max(4svh, 22px); }
+}

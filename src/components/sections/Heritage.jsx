@@ -186,7 +186,7 @@ export default function Heritage() {
 
       {/* ── Top metadata strip ── */}
       <header className="herv2-top">
-        <span className="herv2-label">( 06 ) — The Heritage</span>
+        <span className="herv2-label">( 08 ) — The Heritage</span>
         <span className="herv2-label">1947 — Today</span>
       </header>
 
