@@ -33,6 +33,12 @@ export const unlockScroll = () => {
 export const scrollToTarget = (target, opts = {}) =>
   _lenis?.scrollTo(target, { duration: REDUCED ? 0 : 1.6, immediate: REDUCED, ...opts });
 
+// instant, works even while Lenis is stopped (locks / preloader)
+export const jumpTo = (target) => {
+  if (_lenis) _lenis.scrollTo(target, { immediate: true, force: true });
+  else window.scrollTo(0, typeof target === "number" ? target : document.querySelector(target)?.offsetTop ?? 0);
+};
+
 export default function useLenis(isLoading) {
   const lenisRef = useRef(null);
 

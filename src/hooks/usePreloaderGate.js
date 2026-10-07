@@ -21,7 +21,8 @@ export default function usePreloaderGate({ maxWait = 9000 } = {}) {
 
   useEffect(() => {
     // Grab scroll position before we freeze so we can restore it exactly.
-    const scrollY = window.scrollY;
+    const scrollY = 0; // always start at the hero, never restore an old position
+    window.scrollTo(0, 0);
 
     // Freeze: position:fixed removes the element from scroll flow on all browsers.
     const prev = {

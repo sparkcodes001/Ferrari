@@ -1,0 +1,78 @@
+/* full-screen curtain used for section-to-section navigation */
+.pt {
+  position: fixed;
+  inset: 0;
+  z-index: 70; /* above the navbar (50), menu (40) and film grain (60) */
+  visibility: hidden;
+  pointer-events: auto; /* swallow clicks while the curtain is moving */
+  font-family: "Syncopate", "Segoe UI", sans-serif;
+  text-transform: uppercase;
+  color: #efeae0;
+}
+.pt-cols {
+  position: absolute;
+  inset: 0;
+  display: flex;
+}
+.pt-cols i {
+  flex: 1;
+  display: block;
+  /* +1px each side hides the hairline seams between columns */
+  margin: 0 -0.5px;
+  background: radial-gradient(ellipse 140% 90% at 50% 100%, #f0463a 0%, #da291c 45%, #8e1510 100%);
+  transform: scaleY(0);
+  will-change: transform;
+}
+.pt-content {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2.4vh;
+  opacity: 0;
+  pointer-events: none;
+}
+.pt-mark-wrap { display: block; line-height: 0; will-change: transform, opacity; }
+.pt-mark {
+  width: clamp(80px, 11vw, 180px);
+  height: auto;
+  will-change: transform, opacity;
+}
+.pt-mark .ferrari-main { fill: #efeae0; }
+.pt-mark .ferrari-highlight { fill: #da291c; }
+.pt-mask { overflow: hidden; padding: 0.15em 0.4em; }
+.pt-no {
+  display: block;
+  font-family: "Space Mono", monospace;
+  font-size: clamp(9px, 0.85vw, 15px);
+  letter-spacing: 0.3em;
+  color: rgba(239, 234, 224, 0.8);
+}
+.pt-name {
+  display: block;
+  margin: 0;
+  font-weight: 700;
+  font-size: clamp(26px, 5.2vw, 100px);
+  line-height: 1.05;
+  letter-spacing: -0.01em;
+  text-align: center;
+}
+.pt-bar {
+  width: min(26vw, 320px);
+  height: 1px;
+  margin-top: 1.4vh;
+  background: rgba(239, 234, 224, 0.28);
+}
+.pt-bar i {
+  display: block;
+  height: 100%;
+  background: #ffcd00;
+  transform-origin: left;
+  transform: scaleX(0);
+}
+@media (max-width: 900px) {
+  .pt-bar { width: 50vw; }
+  .pt-name { font-size: clamp(24px, 8vw, 48px); }
+}

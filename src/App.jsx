@@ -13,6 +13,8 @@ import Collection from "./components/sections/Collection";
 import Circuit from "./components/sections/Circuit";
 import Heritage from "./components/sections/Heritage";
 import CTA from "./components/sections/CTA";
+import Footer from "./components/sections/Footer";
+import PageTransition from "./components/ui/PageTransition";
 
 function App() {
   const isLoading = useStore((state) => state.isLoading);
@@ -25,6 +27,7 @@ function App() {
       </a>
       {isLoading && <Preloader />}
       <Navbar />
+      <PageTransition />
       <SoundController />
       <main id="main" tabIndex={-1}>
         <Hero />
@@ -37,6 +40,7 @@ function App() {
         <Circuit />
         <Heritage />
         <CTA />
+        <Footer />
       </main>
     </>
   );

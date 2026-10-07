@@ -3,7 +3,8 @@ import gsap from "gsap";
 import "../hero.css";
 import FerrariLogo from "./FerrariLogo";
 import useStore from "../../store/useStore";
-import { scrollToTarget, lockScroll, unlockScroll } from "../../hooks/useLenis";
+import { lockScroll, unlockScroll } from "../../hooks/useLenis";
+import { transitionTo } from "../../utils/pageTransition";
 import { applySound, blip } from "../../utils/engineSound";
 
 const LINKS = [
@@ -192,20 +193,11 @@ export default function Navbar() {
     };
   }, []);
 
-  const go = useCallback(
-    (e, href) => {
-      e.preventDefault();
-      const wasOpen = open;
-      setOpen(false);
-      setTimeout(
-        () => {
-          scrollToTarget(href === "#top" ? 0 : href);
-        },
-        wasOpen ? 500 : 0,
-      );
-    },
-    [open],
-  );
+  const go = useCallback((e, href) => {
+    e.preventDefault();
+    setOpen(false); // the menu closes underneath the curtain
+    transitionTo(href);
+  }, []);
 
   const navClass = [
     "ho-nav",

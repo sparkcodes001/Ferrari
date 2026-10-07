@@ -3,7 +3,7 @@ import gsap from "gsap";
 import SplitType from "split-type";
 import useStore from "../store/useStore";
 import "./hero.css";
-import { scrollToTarget } from "../hooks/useLenis";
+import { transitionTo } from "../utils/pageTransition";
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -85,7 +85,7 @@ export default function HeroOverlay({
             href="#models"
             onClick={(e) => {
               e.preventDefault();
-              scrollToTarget("#models");
+              transitionTo("#models");
             }}
           >
             <span>Explore Models</span>
